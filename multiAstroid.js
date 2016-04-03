@@ -5,9 +5,13 @@ var app = require('http').createServer(handler)
   , scores = []
   , x = 250
   , y = 250;
-
-io.set('log level', 1);
+//io.set('log level', 1);
 app.listen(8125);
+console.log("starting app");
+
+var MAX_X = 1000;
+var MAX_Y = 800;
+
 
 function handler (req, res) {
   fs.readFile('multiAstroid.html','utf-8',
@@ -22,11 +26,11 @@ function handler (req, res) {
   });
 }
 
-io.sockets.on("connection", function (socket) {
+io.on("connection", function (socket) {
    console.log(socket.handshake.address);
    var sessionId = socket.id;
    console.log("connection made for sessionId = " + sessionId);
-   var turret = new Turret(250, 250, sessionId);
+   var turret = new Turret(MAX_X/2, MAX_Y/2, sessionId);
    var playerSession = new PlayerSession(sessionId, turret);
    socket.emit("connected", {
                    "sessionId" : sessionId,
@@ -35,7 +39,9 @@ io.sockets.on("connection", function (socket) {
                    "color" : turret.color,
                    "isNew" : playerSession.isNew(),
                    "timeLeft" : 6000 - (new Date().getTime() - turret.date.getTime()),
-                   "life" : turret.life
+                   "life" : turret.life,
+                   "MAX_X" : MAX_X,
+                   "MAX_Y" : MAX_Y
 	       });
    for (var rockId in Rock.all) {
        socket.emit("createRock", Rock.all[rockId].serialize());
@@ -103,8 +109,8 @@ function Turret(x, y, sessionId) {
     this.color = nextTurretColor();
     this.recoil = 0;
     this.baseRadius = 10;
-    this.mousePosX = 250;
-    this.mousePosY = 250;
+    this.mousePosX = MAX_X/2;
+    this.mousePosY = MAX_Y/2;
     this.recoilX = 0;
     this.recoilY = 0;
     this.sessionId = sessionId;
@@ -123,10 +129,10 @@ Turret.prototype = {
        } else if (this.ver != 0){
 	   turrety = this.y + this.ver * this.speed;
        }
-       if (turretx - this.baseRadius >= 0 && turretx + this.baseRadius <= 500) {
+       if (turretx - this.baseRadius >= 0 && turretx + this.baseRadius <= MAX_X) {
 	    this.x = turretx;
        }
-       if (turrety - this.baseRadius >= 0 && turrety + this.baseRadius <= 500) {
+       if (turrety - this.baseRadius >= 0 && turrety + this.baseRadius <= MAX_Y) {
             this.y = turrety;
        }
        this.angle = Math.atan2(this.mousePosY - this.y, 
@@ -345,26 +351,26 @@ function createRocks() {
 	  var startx=0, starty=0;
 	  switch (side) {
 	  case 0: 
-	      startx = (500 - 1) * Math.random();
+	      startx = (MAX_X - 1) * Math.random();
 	      starty = 1;
 	      break;			
 	  case 1: 
-	      startx = (500 - 1) * Math.random();
-	      starty = 500 - 1;
+	      startx = (MAX_X - 1) * Math.random();
+	      starty = MAX_Y - 1;
 	      break;
 	  case 2:
 	      startx = 1;
-	      starty = (500 - 1) * Math.random();
+	      starty = (MAX_Y - 1) * Math.random();
 	      break;
 	  case 3:
-	      startx = 500 - 1;
-	      starty = (500 - 1) * Math.random();
+	      startx = MAX_X - 1;
+	      starty = (MAX_Y - 1) * Math.random();
 	      break;
 	  }		   
 	   var rock = new Rock(startx, starty,
 			       25 * Math.random() + 10);
 	   rock.color = rndColor();
-	   var angle = Math.atan2(250 - rock.y, 250 - rock.x);
+	   var angle = Math.atan2(MAX_Y/2 - rock.y, MAX_X/2 - rock.x);
 	   var rockSpeed = 20 / rock.r;
 	   rock.vx = rockSpeed * Math.cos(angle);
 	   rock.vy = rockSpeed * Math.sin(angle);
@@ -392,8 +398,8 @@ function moveRocks() {
 	       rockCollideTurret(rock, ps);
            }
 	}
-	if (rock.x <= 0 || rock.y <= 0 || rock.x % 500 !== rock.x
-	    || rock.y % 500 !== rock.y) {
+	if (rock.x <= 0 || rock.y <= 0 || rock.x % MAX_X !== rock.x
+	    || rock.y % MAX_Y !== rock.y) {
 	    rock.remove();
 	}    
     }
@@ -481,8 +487,8 @@ function moveBullets() {
 	bulletCollideRock(bullet);
         bulletCollideTurret(bullet);
 	if (bullet.x <= 0 || bullet.y <= 0
-	    || bullet.x % 500 !== bullet.x
-	    || bullet.y % 500 !== bullet.y) {
+	    || bullet.x % MAX_X !== bullet.x
+	    || bullet.y % MAX_Y !== bullet.y) {
 	    bullet.remove();
 	}
     }
