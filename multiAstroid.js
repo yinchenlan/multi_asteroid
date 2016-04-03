@@ -102,7 +102,7 @@ function Turret(x, y, sessionId) {
     this.x = x;
     this.y = y;
     this.length = 20;
-    this.speed = 2;
+    this.speed = 3;
     this.date = new Date();
     this.fillIdx = 0;
     this.hor = 0;

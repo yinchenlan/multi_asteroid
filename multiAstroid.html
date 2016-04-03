@@ -145,25 +145,23 @@ function pauseGame() {
 	}
 }
 
-var turSpeed = 2;
-
 window.addEventListener('keydown', function(event) {
 	switch (event.keyCode) {
 	case 87: /* Up arrow was pressed */
 		if (gamePaused == 0 && gameOver == 0)
-			ver = -1 * turSpeed;
+			ver = -1;
 		break;
 	case 83: /* Down arrow was pressed */
 		if (gamePaused == 0 && gameOver == 0)
-			ver = 1 * turSpeed;
+			ver = 1;
 		break;
 	case 65: /* Left arrow was pressed */
 		if (gamePaused == 0 && gameOver == 0)
-			hor = -1 * turSpeed;
+			hor = -1;
 		break;
 	case 68: /* Right arrow was pressed */
 		if (gamePaused == 0 && gameOver == 0)
-			hor = 1 * turSpeed;
+			hor = 1;
 		break;
 	case 82: /* Restart */
 		resetGame();
