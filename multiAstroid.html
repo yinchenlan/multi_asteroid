@@ -6,19 +6,17 @@
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <title>Astroid-Like Game</title>
 </head>
-<body bgcolor="black">
-        <canvas id="gameCanvas" width="500" height="500" tabindex="1"></canvas>
-        <script src="/socket.io/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<body bgcolor="black">                                 
+        <canvas id="gameCanvas" width="1000" height="800" tabindex="1"></canvas>
 <script>
 /**
  * An Astroid-like game.
  * Author: Chuck Lan
  **/
-
 function serverLog(msg) {
    socket.emit("serverLog", {"log" : msg}); 
 }
-
 function getMousePos(canvas, evt) {
 	// get canvas position
 	var obj = canvas;
@@ -29,7 +27,6 @@ function getMousePos(canvas, evt) {
 		left += obj.offsetLeft;
 		obj = obj.offsetParent;
 	}
-
 	// return relative mouse position
         var ps = PlayerSession.all[sessionId];
         var turret = ps.turret;
@@ -38,7 +35,6 @@ function getMousePos(canvas, evt) {
         socket.emit("mousePos", {"mousePosX" : turret.mousePosX,
                                  "mousePosY" : turret.mousePosY}); 
 }
-
 var hor = 0, ver = 0, score = 0, gameOver = 0, gamePaused=0, 
 started = 0, mouseDown = 0,
 endscoresend = 0;
@@ -48,11 +44,9 @@ var scores = [];
 var socket = connect();
 var sessionId = null;
 var transparency = 0.2;
-
 function connect() {
-   return io.connect('http://multi_astroid.jit.su');
+   return io.connect('http://localhost:8125');
 }
-
 socket.on("connected", function (data) {
       debug("connected");
       var turret = new Turret(data["x"], data["y"], data["color"]);
@@ -60,7 +54,6 @@ socket.on("connected", function (data) {
       sessionId = data["sessionId"];
       var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
    });
-
 socket.on("removePlayer", function (data) {
    var ps = PlayerSession.all[data["sessionId"]];
    ps.remove();
@@ -69,49 +62,38 @@ socket.on("removePlayer", function (data) {
       drawGameOver();
    }
 });
-
-
-
 socket.on("damagePlayer", function (data) {
    var ps = PlayerSession.all[data["sessionId"]];
    ps.turret.life = data["life"];
 });
-
 socket.on("readscore", function (data) {
    //debug("scores " + scores);
    if (data > 0) {
       scores.push(data);
    }
 });
-
 socket.on("createRock", function(data) {
    var rock =  Rock.deserialize(data);
    Rock.all[rock.id] = rock;
 });
-
 socket.on("resizeRock", function(data) {
    var rock = Rock.deserialize(data);
    Rock.all[rock.id] = rock;
 });
-
 socket.on("createBullet", function(data) {
    var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
    bullet.vx = data["vx"];
    bullet.vy = data["vy"];   
 });
-
 socket.on("removeBullet", function(data) {
    delete Bullet.all[data["id"]];
 });
-
 socket.on("removeRock", function(data) {
    delete Rock.all[data["id"]];
 });
-
 socket.on("endscoresend", function() {
    endscoresend = 1;
 });
-
 socket.on("updateWorld", function(data) {
    var turretMoves = data["turretMoves"];
    //debug("Number of players = " + turretMoves.length);
@@ -147,17 +129,14 @@ socket.on("updateWorld", function(data) {
    }
    drawWorld();
 });
-
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext('2d');
 var shootSound = new Audio("Fireball3.wav");
-
 function resetGame() {
    var ps = PlayerSession.all[sessionId];
    ps.remove();
    socket.socket.reconnect();
 }
-
 function pauseGame() {
 	if (gamePaused == 1) {
 		gamePaused = 0;
@@ -165,7 +144,6 @@ function pauseGame() {
 		gamePaused = 1;
 	}
 }
-
 window.addEventListener('keydown', function(event) {
 	switch (event.keyCode) {
 	case 87: /* Up arrow was pressed */
@@ -201,7 +179,6 @@ window.addEventListener('keydown', function(event) {
            "hor" : hor,
            "ver" : ver});
 }, true);
-
 window.addEventListener('keyup', function(event) {
 	switch (event.keyCode) {
 	case 87: /* Up arrow was pressed */
@@ -225,7 +202,6 @@ window.addEventListener('keyup', function(event) {
         //if (event.stopPropagation) { event.stopPropagation(); }
         socket.emit("moveEnd", {"sessionId" : sessionId});
 }, true);
-
 function drawTurrets() {
    for (var key in PlayerSession.all) {
       if (PlayerSession.all.hasOwnProperty(key)) {
@@ -236,7 +212,6 @@ function drawTurrets() {
       }
    }   
 }
-
 // Draws turret
 function drawTurret(ps, isYou, isGhost) {
         var turret = ps.turret;
@@ -334,7 +309,6 @@ function drawTurret(ps, isYou, isGhost) {
 	   ctx.restore();
         }
 }
-
 function drawLocation() {
 	// Draw location
 	ctx.save();
@@ -344,7 +318,6 @@ function drawLocation() {
 			+ Math.round(turret.y), 10, 20);
 	ctx.restore();
 }
-
 function drawScore() {
 	ctx.save();
 	ctx.font = "8pt Courier New";
@@ -352,7 +325,6 @@ function drawScore() {
 	ctx.fillText("" + score + " destroyed" , 10, 480);
 	ctx.restore();
 }
-
 function drawHelp() {
 	ctx.save();
 	ctx.font = "8pt Courier New";
@@ -360,7 +332,6 @@ function drawHelp() {
 	ctx.fillText("\u2190 a, \u2192 d, \u2191 w, \u2193 s, Left Mouse Button", 235, 20);
         ctx.restore();
 }
-
 function drawGameOver() {
 	ctx.save();
 	ctx.font = "bold 8pt Courier New";
@@ -368,7 +339,6 @@ function drawGameOver() {
 	ctx.fillText("(R)estart", 220, 250);
 	ctx.restore();
 }
-
 function drawGamePaused() {
 	ctx.save();
 	ctx.font = "bold 24pt Calibri";
@@ -376,7 +346,6 @@ function drawGamePaused() {
 	ctx.fillText("(P)lay", 200, 100);
 	ctx.restore();
 }
-
 function drawGameStart() {
 	ctx.save();
 	ctx.font = "bold 24pt Calibri";
@@ -384,7 +353,6 @@ function drawGameStart() {
 	ctx.fillText("(S)tart", 200, 100);
 	ctx.restore();
 }
-
 function drawScores() {        
         ctx.save();
         ctx.font = "bold 24pt Calibri";
@@ -405,9 +373,7 @@ function drawScores() {
         ctx.restore();
         drawScoresDone = 1;
 }
-
 var drawScoresDone = 0;
-
 function moveRocks() {
 	for (var rockId in Rock.all) {
                 if (Rock.all.hasOwnProperty(rockId)) {
@@ -422,7 +388,6 @@ function moveRocks() {
                 }
 	}
 }
-
 function moveBullets() {
 	for (var i in Bullet.all) { 
                 if (Bullet.all.hasOwnProperty(i)) {
@@ -438,7 +403,6 @@ function moveBullets() {
                 }
 	}
 }
-
 // Bullet to Rock collision
 function bulletCollideRock(bullet) {
 	for ( var idx in Rock.all) {
@@ -456,7 +420,6 @@ function bulletCollideRock(bullet) {
 		}
 	}
 }
-
 //Rock to Turret collision
 function rockCollideTurret(rock) {
 	if (distance(turret.x, turret.y, rock.x, rock.y) <= (5 + rock.r)) {	
@@ -465,13 +428,11 @@ function rockCollideTurret(rock) {
                 socket.emit('submitscore', score);
 	}
 }
-
 function distance(x1, y1, x2, y2) {
 	var diffx = x2 - x1;
 	var diffy = y2 - y1;
 	return Math.sqrt(diffx * diffx + diffy * diffy);
 }
-
 function debug(info) {
 	ctx.save();
 	ctx.font = "8pt Courier New";
@@ -479,7 +440,6 @@ function debug(info) {
 	ctx.fillText("Debug: " + info, 10, 20);
 	ctx.restore();
 }
-
 // Constructor
 function Turret(x, y, color) {
     this.x = x;
@@ -499,7 +459,6 @@ function Turret(x, y, color) {
     this.recoilY = 0;
     this.life = 100;
 }
-
 function PlayerSession(sessId, turret, timeLeft) {
     this.sessionId = sessId;
     this.turret = turret;
@@ -509,9 +468,7 @@ function PlayerSession(sessId, turret, timeLeft) {
     this.kills = 0;
     PlayerSession.all[this.sessionId] = this;
 }
-
 PlayerSession.all = {};
-
 PlayerSession.prototype = {
     remove : function() {
        delete PlayerSession.all[this.sessionId];
@@ -521,7 +478,6 @@ PlayerSession.prototype = {
        return t;
     }
 };
-
 // Constructor
 function Bullet(x, y, r, color, sessionId, id) {
 	this.x = x;
@@ -560,12 +516,10 @@ Bullet.prototype = {
                 delete Bullet.all[this.id];
 	}
 };
-
 function Coord(x, y) {
 	this.x = x;
 	this.y = y;
 }
-
 // Constructor
 function Rock(x, y, r, id) {
 	this.color = "white";
@@ -637,27 +591,21 @@ Rock.prototype = {
 		ctx.restore();
 	}
 };
-
 // Adding in various event handlers
 canvas.addEventListener('mousemove', function(evt) {
 	getMousePos(canvas, evt);
 }, false);
-
 canvas.addEventListener('mousedown', function(evt) {
 	if (gamePaused == 1 || gameOver == 1) return;
 	mouseDown = 1;
         socket.emit("mouseDown");
 }, false);
-
 canvas.addEventListener('mouseup', function(evt) {
    mouseDown = 0;
    socket.emit("mouseUp");
 }, false);
-
 canvas.onselectstart = function () {return false;}
-
 //canvas.onmousedown = function() {return false;}
-
 function drawWorld() {	
 	// Clear display
 	ctx.save();
@@ -667,18 +615,13 @@ function drawWorld() {
         ctx.strokeStyle ="#6495ED";
         ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
 	ctx.restore();		
-
 	moveRocks();
-
 	// Draw turret
 	drawTurrets();
-
         moveBullets();
         Bullet.draw_all();
-
 	// Draw rocks
 	Rock.draw_all();
-
 	//drawScore();
 	
 	drawHelp();
