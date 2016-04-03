@@ -129,8 +129,14 @@ socket.on("updateWorld", function(data) {
    }
    drawWorld();
 });
-var canvas = document.getElementById("gameCanvas");
+var canvas = document.createElement('canvas');
+canvas.width = 1000px;
+canvas.height = 800px;
 var ctx = canvas.getContext('2d');
+
+var osCanvas = document.getElementById("gameCanvas");
+var osCtx = osCanvas.getContext('2d');
+
 var shootSound = new Audio("Fireball3.wav");
 function resetGame() {
    var ps = PlayerSession.all[sessionId];
@@ -626,6 +632,10 @@ function drawWorld() {
 	//drawScore();
 	
 	drawHelp();
+	
+	var image = canvas.getImageData(0,0,1000,800); 
+  // copy into visual canvas at different position
+  osCtx.putImageData(image, 0, 0);
 }
 </script>
 </body>
