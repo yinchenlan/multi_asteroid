@@ -7,7 +7,7 @@ var app = require('http').createServer(handler)
   , y = 250;
 //io.set('log level', 1);
 var port = process.env.PORT || 8125;
-app.listen(8125);
+app.listen(port);
 console.log("starting app");
 
 var MAX_X = 1000;
