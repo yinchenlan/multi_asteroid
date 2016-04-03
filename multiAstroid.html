@@ -45,7 +45,7 @@ var socket = connect();
 var sessionId = null;
 var transparency = 0.2;
 function connect() {
-   return io.connect('http://localhost:8125');
+   return io.connect(window.location.hostname);
 }
 socket.on("connected", function (data) {
       debug("connected");

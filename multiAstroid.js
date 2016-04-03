@@ -6,6 +6,7 @@ var app = require('http').createServer(handler)
   , x = 250
   , y = 250;
 //io.set('log level', 1);
+var port = process.env.PORT || 8125;
 app.listen(8125);
 console.log("starting app");
 
