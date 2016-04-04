@@ -369,10 +369,10 @@ function createRocks() {
 	      break;
 	  }		   
 	   var rock = new Rock(startx, starty,
-			       25 * Math.random() + 10);
+			       90 * Math.random() + 20);
 	   rock.color = rndColor();
 	   var angle = Math.atan2(MAX_Y/2 - rock.y, MAX_X/2 - rock.x);
-	   var rockSpeed = 20 / rock.r;
+	   var rockSpeed = 80 / rock.r;
 	   rock.vx = rockSpeed * Math.cos(angle);
 	   rock.vy = rockSpeed * Math.sin(angle);
 	   if (Math.random() > .5) {
