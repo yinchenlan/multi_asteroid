@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, user-scalable=no">
-<title>Astroid-Like Game</title>
+<title>Asteroid-Like Game</title>
 </head>
 <script src="/socket.io/socket.io.js"></script>
 <body bgcolor="black">                                 
@@ -126,6 +126,8 @@ socket.on("updateWorld", function(data) {
       turret.recoilX = recoilX;
       turret.recoilY = recoilY;
       turret.life = turretMove["life"];
+	    moveRocks();
+      moveBullets();
    }
 });                                   
 var canvas = document.getElementById("gameCanvas");
@@ -226,7 +228,7 @@ function drawTurret(ps, isYou, isGhost) {
 		}
 		turret.date = now;		
 	}
-        var turretFillStyle = ["grey", turret.color];
+  var turretFillStyle = ["grey", turret.color];
 	ctx.fillStyle = turretFillStyle[turret.fillIdx];
         ctx.strokeStyle = "black";
         if (!isYou)
@@ -614,12 +616,11 @@ function drawWorld() {
         ctx.lineWidth = 2;
         ctx.strokeStyle ="#6495ED";
         ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-	ctx.restore();		
-	moveRocks();
+	ctx.restore();
 	// Draw turret
 	drawTurrets();
-        moveBullets();
-        Bullet.draw_all();
+  //moveBullets();
+  Bullet.draw_all();
 	// Draw rocks
 	Rock.draw_all();
 	//drawScore();
