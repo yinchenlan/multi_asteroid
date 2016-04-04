@@ -500,11 +500,11 @@ function createBullets(sessionId) {
     var ps = PlayerSession.all[sessionId];
     var turret = ps.turret;
     var color = turret.color;
-    if(!ps.isNew() && ps.mouseDown == 1 && now - ps.mouseDate > 200) {
+    if(!ps.isNew() && ps.mouseDown == 1 && now - ps.mouseDate > 500) {
         var x = turret.recoilX + turret.length * Math.cos(turret.angle);
         var y = turret.recoilY + turret.length * Math.sin(turret.angle);
-	var bullet = new Bullet(x, y, 4, color, sessionId);
-        var speed = 3;
+	      var bullet = new Bullet(x, y, 4, color, sessionId);
+        var speed = 8;
         bullet.vx = speed * Math.cos(turret.angle);
         bullet.vy = speed * Math.sin(turret.angle);
         turret.recoil = 5;
