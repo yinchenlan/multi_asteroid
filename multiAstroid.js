@@ -102,7 +102,7 @@ function Turret(x, y, sessionId) {
     this.x = x;
     this.y = y;
     this.length = 20;
-    this.speed = 3;
+    this.speed = 6;
     this.date = new Date();
     this.fillIdx = 0;
     this.hor = 0;
@@ -222,7 +222,7 @@ var t = setInterval(function() {
    io.sockets.emit("updateWorld", 
       {"turretMoves" : turretMoves
       });
-}, 1000 / 44);
+}, 1000 / 22);
 
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
@@ -504,7 +504,7 @@ function createBullets(sessionId) {
         var x = turret.recoilX + turret.length * Math.cos(turret.angle);
         var y = turret.recoilY + turret.length * Math.sin(turret.angle);
 	      var bullet = new Bullet(x, y, 4, color, sessionId);
-        var speed = 8;
+        var speed = 16;
         bullet.vx = speed * Math.cos(turret.angle);
         bullet.vy = speed * Math.sin(turret.angle);
         turret.recoil = 5;
