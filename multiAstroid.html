@@ -128,7 +128,7 @@
         socket.on("updateWorld", function(data) {
             //debug("updateWorld");
             executeCommands(data["updateWorld"]);
-            drawWorld();
+            //drawWorld();
         });
 
         function turretMoves(data) { 
@@ -738,7 +738,7 @@
             //canvas.onmousedown = function() {return false;}
         function drawWorld() {
             //debug("drawWorld");
-            //requestAnimationFrame(drawWorld);
+            requestAnimationFrame(drawWorld);
             // Clear display
             ctx.save();
             ctx.fillStyle = "rgba(0, 0, 0, .2)";
@@ -757,6 +757,7 @@
 
             drawHelp();
         }
+        drawWorld();
     </script>
 </body>
 
