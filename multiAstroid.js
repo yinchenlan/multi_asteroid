@@ -2,9 +2,7 @@ var app = require('http').createServer(handler),
     io = require('socket.io').listen(app),
     fs = require('fs'),
     util = require('util'),
-    scores = [],
-    x = 250,
-    y = 250;
+    scores = [];
 //io.set('log level', 1);
 var port = process.env.PORT || 8125;
 app.listen(port);
@@ -16,7 +14,7 @@ var MAX_Y = 800;
 var commandQueue = [];
 
 function addCommand(command) {
-    console.log("adding command : " + command[0]);
+    //console.log("adding command : " + command[0]);
     commandQueue.push(command);
 }
 
@@ -54,10 +52,10 @@ io.on("connection", function(socket) {
         "MAX_Y": MAX_Y
     });
     for (var rockId in Rock.all) {
-        addCommand([
-                "createRock", Rock.all[rockId].serialize()
-            ])
-            //socket.emit("createRock", Rock.all[rockId].serialize());
+        //addCommand([
+        //        "createRock", Rock.all[rockId].serialize()
+        //    ])
+        socket.emit("createRock", Rock.all[rockId].serialize());
     }
 
     socket.on("disconnect", function(data) {
@@ -431,6 +429,7 @@ function moveRocks() {
         var rock = Rock.all[i];
         rock.x += rock.vx;
         rock.y += rock.vy;
+        addCommand(["updateRock", {"id" : rock.id, "x" : rock.x, "y" : rock.y}]);
         for (var idx in PlayerSession.all) {
             if (PlayerSession.all.hasOwnProperty(idx)) {
                 var ps = PlayerSession.all[idx];
@@ -543,6 +542,7 @@ function moveBullets() {
         var bullet = Bullet.all[i];
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
+        addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
         bulletCollideRock(bullet);
         bulletCollideTurret(bullet);
         if (bullet.x <= 0 || bullet.y <= 0 ||

@@ -65,6 +65,11 @@
             sessionId = data["sessionId"];
             var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
         });
+        
+        socket.on("createRock", function(data) {
+             var rock =  Rock.deserialize(data);
+             Rock.all[rock.id] = rock;
+        });
 
         function removePlayer(data) {
             //debug("removePlayer");
@@ -159,8 +164,8 @@
                 turret.recoilX = recoilX;
                 turret.recoilY = recoilY;
                 turret.life = turretMove["life"];
-                moveRocks();
-                moveBullets();
+                //moveRocks();
+                //moveBullets();
             }
         };
 
@@ -198,6 +203,12 @@
                 case "turretMoves":
                     turretMoves(command[1]);
                     break;
+                case "updateRock" :
+                    Rock.moveRock(command[1]);
+                    break;
+                case "updateBullet" :
+                    Bullet.moveBullet(command[1]);
+                    break;         
             }
         }
 
@@ -619,6 +630,12 @@
                 delete Bullet.all[this.id];
             }
         };
+        
+        Bullet.moveBullet = function(data) {
+            var bullet = Bullet.all[data["id"]];
+            bullet.x = data["x"];
+            bullet.y = data["y"];
+        };
 
         function Coord(x, y) {
             this.x = x;
@@ -661,6 +678,13 @@
                 }
             }
         };
+        
+        Rock.moveRock = function(data) {
+            var rock = Rock.all[data["id"]];
+            rock.x = data["x"];
+            rock.y = data["y"];
+        };
+        
         Rock.prototype = {
             remove: function() {
                 delete Rock.all[this.id];
