@@ -8,8 +8,8 @@ var port = process.env.PORT || 8125;
 app.listen(port);
 console.log("starting app");
 
-var MAX_X = 1000;
-var MAX_Y = 800;
+var MAX_X = 800;
+var MAX_Y = 600;
 
 var commandQueue = [];
 
