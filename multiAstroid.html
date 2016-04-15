@@ -70,7 +70,7 @@
 	var starsPositions = [];
 
         function connect() {
-            return io.connect(window.location.hostname + ":8125");
+            return io.connect(window.location.hostname/* + ":8125"*/);
         }
         socket.on("connected", function(data) {
             var turret = new Turret(data["x"], data["y"], data["color"]);
