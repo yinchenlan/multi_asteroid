@@ -9,7 +9,7 @@
 <script src="/socket.io/socket.io.js"></script>
 
 <body bgcolor="black">
-    <canvas id="gameCanvas" width="800" height="600" tabindex="1"></canvas>
+    <canvas id="gameCanvas" width="400" height="300" tabindex="1"></canvas>
     <script>
         /**
          * An Asteroid-like game.
@@ -21,6 +21,18 @@
             });
         }
 
+	var starsPositions = [];
+	
+	function getXOffset() {
+	    var negX = -1 * PlayerSession.all[sessionId].turret.x;
+	    return negX + 200;
+	}
+
+	function getYOffset() {
+	    var negY = -1 * PlayerSession.all[sessionId].turret.y;
+	    return negY + 150;
+        }
+	
         function getMousePos(canvas, evt) {
             // get canvas position
             var obj = canvas;
@@ -34,8 +46,8 @@
             // return relative mouse position
             var ps = PlayerSession.all[sessionId];
             var turret = ps.turret;
-            turret.mousePosX = evt.clientX - left + window.pageXOffset;
-            turret.mousePosY = evt.clientY - top + window.pageYOffset;
+            turret.mousePosX = -getXOffset() + evt.clientX - left + window.pageXOffset;
+            turret.mousePosY = -getYOffset() + evt.clientY - top + window.pageYOffset;
             socket.emit("mousePos", {
                 "mousePosX": turret.mousePosX,
                 "mousePosY": turret.mousePosY
@@ -55,9 +67,10 @@
         var socket = connect();
         var sessionId = null;
         var transparency = 0.2;
+	var starsPositions = [];
 
         function connect() {
-            return io.connect(window.location.hostname/* + ":8125"*/);
+            return io.connect(window.location.hostname + ":8125");
         }
         socket.on("connected", function(data) {
             var turret = new Turret(data["x"], data["y"], data["color"]);
@@ -65,6 +78,10 @@
             sessionId = data["sessionId"];
             var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
         });
+
+	socket.on("stars", function(data) {
+	    starsPositions = data["stars"];
+	});
         
         socket.on("createRock", function(data) {
              var rock =  Rock.deserialize(data);
@@ -318,7 +335,7 @@
             var turret = ps.turret;
             // Draw base
             ctx.save();
-            ctx.translate(turret.x, turret.y);
+            ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
             var now = new Date();
             if (now - turret.date > 250) {
                 if (turret.fillIdx == 0) {
@@ -342,7 +359,7 @@
             ctx.restore();
             // Draw inner base
             ctx.save();
-            ctx.translate(turret.x, turret.y);
+            ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
             ctx.fillStyle = "white";
             ctx.strokeStyle = "black";
             if (!isYou)
@@ -375,12 +392,12 @@
             //if (!isYou)
             ctx.globalAlpha = 0.2;
             ctx.beginPath();
-            ctx.moveTo(turret.recoilX, turret.recoilY);
-            ctx.lineTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.lineTo(x3, y3);
-            ctx.lineTo(x4, y4);
-            ctx.lineTo(x5, y5);
+            ctx.moveTo(getXOffset() + turret.recoilX, getYOffset() + turret.recoilY);
+            ctx.lineTo(getXOffset() + x1, getYOffset() + y1);
+            ctx.lineTo(getXOffset() + x2, getYOffset() + y2);
+            ctx.lineTo(getXOffset() + x3, getYOffset() + y3);
+            ctx.lineTo(getXOffset() + x4, getYOffset() + y4);
+            ctx.lineTo(getXOffset() + x5, getYOffset() + y5);
             ctx.fill();
             ctx.stroke();
             ctx.restore();
@@ -392,10 +409,10 @@
                 ctx.font = "8pt Courier New";
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .2;
-                ctx.fillText(ps.getTimeLeft(), turret.x - 14, turret.y - 14);
+                ctx.fillText(ps.getTimeLeft(), getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
                 ctx.restore();
                 ctx.save();
-                ctx.translate(turret.x, turret.y);
+                ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
                 ctx.arc(0, 0, turret.length, 0, 2 * Math.PI, false);
                 ctx.fillStyle = turret.color;
                 ctx.globalAlpha = 0.1;
@@ -406,7 +423,7 @@
                 ctx.font = "8pt Courier New";
                 ctx.fillStyle = "red";
                 ctx.globalAlpha = .2;
-                ctx.fillText("kls: " + ps.kills, turret.x - 14, turret.y - 14);
+                ctx.fillText("kls: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
                 ctx.restore();
             }
         }
@@ -416,8 +433,10 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "yellow";
-            ctx.fillText("Location: " + Math.round(turret.x) + "," +
-                Math.round(turret.y), 10, 20);
+	    var x = PlayerSession.all[sessionId].turret.x;
+	    var y = PlayerSession.all[sessionId].turret.y;
+            ctx.fillText("Location: "  + x  + "," +
+               y , 10, 20);
             ctx.restore();
         }
 
@@ -433,7 +452,7 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("\u2190 a, \u2192 d, \u2191 w, \u2193 s, Left Mouse Button", 235, 20);
+            ctx.fillText("\u2190 a, \u2192 d, \u2191 w, \u2193 s, Left Mouse Button", 10, 10);
             ctx.restore();
         }
 
@@ -616,7 +635,7 @@
         Bullet.prototype = {
             draw: function() {
                 ctx.save();
-                ctx.translate(this.x, this.y);
+                ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
                 ctx.fillStyle = this.color;
                 ctx.strokeStyle = "black";
                 ctx.beginPath();
@@ -691,7 +710,7 @@
             },
             draw: function() {
                 ctx.save();
-                ctx.translate(this.x, this.y);
+                ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
                 ctx.rotate(this.drawangle * Math.PI / 180);
                 this.drawangle = (this.drawangle + (1 * this.spinDirection)) % 360;
                 ctx.fillStyle = this.color;
@@ -734,8 +753,10 @@
         }, false);
         canvas.onselectstart = function() {
                 return false;
-            }
-            //canvas.onmousedown = function() {return false;}
+        }
+        function drawStars() {
+	        							
+	}
         function drawWorld() {
             //debug("drawWorld");
             requestAnimationFrame(drawWorld);
@@ -746,7 +767,7 @@
             ctx.lineWidth = 2;
             ctx.strokeStyle = "#6495ED";
             ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-            ctx.restore();  
+            ctx.restore();
             // Draw turret
             drawTurrets();
             //moveBullets();
@@ -754,8 +775,8 @@
             // Draw rocks
             Rock.draw_all();
             //drawScore();
-
             drawHelp();
+	    drawLocation();
         }
         drawWorld();
     </script>

@@ -2,22 +2,27 @@ var app = require('http').createServer(handler),
     io = require('socket.io').listen(app),
     fs = require('fs'),
     util = require('util'),
-    scores = [];
-//io.set('log level', 1);
-var port = process.env.PORT || 8125;
+    scores = [],
+    MAX_X = 800,
+    MAX_Y = 600,
+    port = process.env.PORT || 8125,
+    commandQueue = [],
+    starsPositions=[];
+
 app.listen(port);
 console.log("starting app");
 
-var MAX_X = 800;
-var MAX_Y = 600;
-
-var commandQueue = [];
-
-function addCommand(command) {
-    //console.log("adding command : " + command[0]);
-    commandQueue.push(command);
+function initializeStarsPositions() {
+    for(i = 0; i < 100; i++) {
+	var x = Math.round(Math.random() * MAX_X);
+	var y = Math.round(Math.random() * MAX_Y);
+	//starPositions.push([x, y]);
+    }
 }
 
+function addCommand(command) {
+    commandQueue.push(command);
+}
 
 function handler(req, res) {
     fs.readFile('multiAstroid.html', 'utf-8',
@@ -38,7 +43,7 @@ io.on("connection", function(socket) {
     console.log(socket.handshake.address);
     var sessionId = socket.id;
     console.log("connection made for sessionId = " + sessionId);
-    var turret = new Turret(MAX_X / 2, MAX_Y / 2, sessionId);
+    var turret = new Turret(Math.round(Math.random() * MAX_X - 40) + 20, Math.round(Math.random() * MAX_Y - 40) + 20, sessionId);
     var playerSession = new PlayerSession(sessionId, turret);
     socket.emit("connected", {
         "sessionId": sessionId,
@@ -51,6 +56,7 @@ io.on("connection", function(socket) {
         "MAX_X": MAX_X,
         "MAX_Y": MAX_Y
     });
+    //socket.emit("stars", {"stars", starsPositions});
     for (var rockId in Rock.all) {
         //addCommand([
         //        "createRock", Rock.all[rockId].serialize()
@@ -153,11 +159,13 @@ Turret.prototype = {
         if (turrety - this.baseRadius >= 0 && turrety + this.baseRadius <= MAX_Y) {
             this.y = turrety;
         }
+	this.x = Math.round(this.x);
+	this.y = Math.round(this.y);
         this.angle = Math.atan2(this.mousePosY - this.y,
             this.mousePosX - this.x);
         var recoilAngle = this.angle + Math.PI;
-        this.recoilX = this.x + this.recoil * Math.cos(recoilAngle);
-        this.recoilY = this.y + this.recoil * Math.sin(recoilAngle);
+        this.recoilX = Math.round(this.x + this.recoil * Math.cos(recoilAngle));
+        this.recoilY = Math.round(this.y + this.recoil * Math.sin(recoilAngle));
         if (this.recoil > 0) {
             this.recoil -= 1;
         }
@@ -208,6 +216,8 @@ PlayerSession.prototype = {
         }
     }
 };
+
+initializeStarsPositions();
 
 var t = setInterval(function() {
     var turretMoves = [];
