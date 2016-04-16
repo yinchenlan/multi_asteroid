@@ -1,6 +1,7 @@
 var app = require('http').createServer(handler),
     io = require('socket.io').listen(app),
     fs = require('fs'),
+    url = require('url'),
     util = require('util'),
     scores = [],
     MAX_X = 800,
@@ -25,18 +26,26 @@ function addCommand(command) {
 }
 
 function handler(req, res) {
-    fs.readFile('multiAstroid.html', 'utf-8',
-        function(err, data) {
-            if (err) {
-                res.writeHead(500);
-                return res.end('Error loading game!');
-            }
-
-            res.writeHead(200, {
-                'Content-Type': 'text/html'
-            });
-            res.end(data);
-        });
+    var request = url.parse(req.url, true);
+    var action = request.pathname;
+    if (action == '/laser.wav') {
+        var sound = fs.readFileSync('./laser.wav');
+        res.writeHead(200, {'Content-Type': 'audio/vnd.wav'});
+        res.end(sound, 'binary');
+    } else {
+        fs.readFile('multiAstroid.html', 'utf-8',
+          function(err, data) {
+              if (err) {
+                  res.writeHead(500);
+                  return res.end('Error loading game!');
+              }
+  
+              res.writeHead(200, {
+                  'Content-Type': 'text/html'
+              });
+              res.end(data);
+          });
+     }   
 }
 
 io.on("connection", function(socket) {

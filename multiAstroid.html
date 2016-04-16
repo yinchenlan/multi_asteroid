@@ -8,6 +8,8 @@
    <script src="/socket.io/socket.io.js"></script>
    <body bgcolor="black">
       <canvas id="gameCanvas" width="400" height="300" tabindex="1"></canvas>
+      <audio id="laser" src="laser.wav" style="display: none;"></audio>
+
       <script>
          /**
           * An Asteroid-like game.
@@ -64,6 +66,9 @@
          var sessionId = null;
          var transparency = 0.2;
          var starsPositions = [];
+                         
+         var laser = document.getElementById("laser");
+
          
          function connect() {
              return io.connect(window.location.hostname/* + ":8125"*/);
@@ -123,6 +128,8 @@
              var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
              bullet.vx = data["vx"];
              bullet.vy = data["vy"];
+             laser.play();
+
          };
          
          function removeBullet(data) {
