@@ -1,4 +1,4 @@
-multi_astroid
+multi_asteroid
 =============
 
-Multiplayer Astroids
+Multiplayer Asteroids
