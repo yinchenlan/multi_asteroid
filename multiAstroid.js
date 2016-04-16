@@ -7,7 +7,7 @@ var app = require('http').createServer(handler),
     MAX_Y = 600,
     port = process.env.PORT || 8125,
     commandQueue = [],
-    starsPositions=[];
+    starPositions=[];
 
 app.listen(port);
 console.log("starting app");
@@ -16,7 +16,7 @@ function initializeStarsPositions() {
     for(i = 0; i < 100; i++) {
 	var x = Math.round(Math.random() * MAX_X);
 	var y = Math.round(Math.random() * MAX_Y);
-	//starPositions.push([x, y]);
+	starPositions.push([x, y]);
     }
 }
 
@@ -56,7 +56,7 @@ io.on("connection", function(socket) {
         "MAX_X": MAX_X,
         "MAX_Y": MAX_Y
     });
-    //socket.emit("stars", {"stars", starsPositions});
+    socket.emit("stars", {"stars": starPositions});
     for (var rockId in Rock.all) {
         //addCommand([
         //        "createRock", Rock.all[rockId].serialize()
