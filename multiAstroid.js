@@ -67,9 +67,6 @@ io.on("connection", function(socket) {
     });
     socket.emit("stars", {"stars": starPositions});
     for (var rockId in Rock.all) {
-        //addCommand([
-        //        "createRock", Rock.all[rockId].serialize()
-        //    ])
         socket.emit("createRock", Rock.all[rockId].serialize());
     }
 
@@ -87,7 +84,7 @@ io.on("connection", function(socket) {
     });
 
     socket.on("moveStart", function(data) {
-        console.log("moving player start");
+        //console.log("moving player start");
         var sessionId = data["sessionId"];
         var hor = data["hor"];
         var ver = data["ver"];
@@ -98,7 +95,7 @@ io.on("connection", function(socket) {
     });
 
     socket.on("moveEnd", function(data) {
-        console.log("moving player end");
+        //console.log("moving player end");
         var sessionId = data["sessionId"];
         var ps = PlayerSession.all[socket.id];
         var turret = ps.turret;
@@ -126,6 +123,12 @@ io.on("connection", function(socket) {
     socket.on("mouseUp", function(data) {
         var ps = PlayerSession.all[socket.id];
         ps.mouseDown = 0;
+    });
+    
+    socket.on("nickName", function(data) {
+        var ps = PlayerSession.all[socket.id];
+        ps.name = data["name"];
+        console.log("nickName " + ps.name);
     });
 });
 
@@ -201,6 +204,7 @@ function PlayerSession(sessionId, turret) {
     this.mouseDate = new Date();
     this.date = new Date();
     this.kills = 0;
+    this.name = "";
     PlayerSession.all[this.sessionId] = this;
 }
 
@@ -251,6 +255,7 @@ var t = setInterval(function() {
                 "angle": turret.angle,
                 "timeLeft": 6000 - (new Date().getTime() - turret.date.getTime()),
                 "kills": ps.kills,
+                "nickName": ps.name,
                 "life": turret.life
             });
         }
