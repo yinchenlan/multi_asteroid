@@ -74,6 +74,7 @@ io.on("connection", function(socket) {
         var sessionId = socket.id;
         var playerSession = PlayerSession.all[sessionId];
         playerSession.remove();
+        //console.log("size : " + Object.keys(PlayerSession.all).length);
         console.log("Player Session " + sessionId + " removed");
         //io.sockets.emit("removePlayer", {
         //    "sessionId": sessionId
@@ -192,7 +193,7 @@ Turret.prototype = {
     	this.y = Math.round(this.y);
         this.angle = Math.atan2(this.mousePosY - this.y,
             this.mousePosX - this.x);
-            console.log("angle : " + this.angle + ", mousePosX : " + this.mousePosX + ", mousePosY : " + this.mousePosY + ", x : " + this.x + ", y : " + this.y);
+            //console.log("angle : " + this.angle + ", mousePosX : " + this.mousePosX + ", mousePosY : " + this.mousePosY + ", x : " + this.x + ", y : " + this.y);
         var recoilAngle = this.angle + Math.PI;
         this.recoilX = Math.round(this.x + this.recoil * Math.cos(recoilAngle));
         this.recoilY = Math.round(this.y + this.recoil * Math.sin(recoilAngle));

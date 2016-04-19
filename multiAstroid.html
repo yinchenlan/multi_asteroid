@@ -42,6 +42,10 @@
         function hideForm() {
             document.nameForm.style.display="none";
         }
+        
+        function unhideForm() {
+            document.nameForm.style.display="block";
+        }
 
         function getXOffset() {
             var negX = -1 * PlayerSession.all[sessionId].turret.x;
@@ -94,6 +98,7 @@
 
 
         function connect() {
+            gameOver = 0;
             return io.connect(window.location.hostname/* + ":8125"*/);
         }
 
@@ -102,6 +107,7 @@
                 var turret = new Turret(data["x"], data["y"], data["color"]);
                 turret.life = data["life"];
                 sessionId = data["sessionId"];
+                //alert("Creating player session " + sessionId);
                 var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
                 setNickNameToPlayerSession();
             });
@@ -136,11 +142,13 @@
         function removePlayer(data) {
             //debug("removePlayer");
             var ps = PlayerSession.all[data["sessionId"]];
-            ps.remove();
             if (data["sessionId"] == sessionId) {
                 socket.disconnect();
-                drawGameOver();
+                gameOver = 1;
+                unhideForm();
             }
+            //alert("removing session " + sessionId);
+            ps.remove();
         };
 
         function damagePlayer(data) {
@@ -200,8 +208,9 @@
                 var angle = turretMove["angle"];
                 var name = turretMove["nickName"];
                 var ps = PlayerSession.all[sessId];
-                if (ps == null) {
+                if (ps == null && gameOver == 0) {
                     var turret = new Turret(x, y, color);
+                    //alert("creating new player session " + sessId);
                     ps = new PlayerSession(sessId, turret, turretMove["timeLeft"]);
                 }
                 ps.name = name;
@@ -516,11 +525,12 @@
             ctx.restore();
         }
 
-        function drawGameOver() {
+        function drawGameOver() { 
+            //alert("draw game over"); 
             ctx.save();
-            ctx.font = "bold 8pt Courier New";
+            ctx.font = "bold 16pt Courier New";
             ctx.fillStyle = "yellow";
-            ctx.fillText("(R)estart", 220, 250);
+            ctx.fillText("Game Over", 40, 40);
             ctx.restore();
         }
 
@@ -847,27 +857,29 @@
         }
 
         function drawWorld() {
-            //debug("drawWorld");
-            requestAnimationFrame(drawWorld);
-            // Clear display                
-            ctx.save();
-            ctx.fillStyle = "rgba(0, 0, 0, .2)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = "#6495ED";
-            ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-            ctx.restore();
-            drawStars();
-            // Draw turret
-            drawTurrets();
-            //moveBullets();
-            Bullet.draw_all();
-            // Draw rocks
-            Rock.draw_all();
-            //drawScore();
-            drawHelp();
-            drawLocation();
-            drawNumPlayers();
+              requestAnimationFrame(drawWorld);  
+              if (gameOver == 1) drawGameOver();
+              else {
+              // Clear display                
+              ctx.save();
+              ctx.fillStyle = "rgba(0, 0, 0, .2)";
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = "#6495ED";
+              ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+              ctx.restore();
+              drawStars();
+              // Draw turret
+              drawTurrets();
+              //moveBullets();
+              Bullet.draw_all();
+              // Draw rocks
+              Rock.draw_all();
+              //drawScore();
+              drawHelp();
+              drawLocation();
+              drawNumPlayers();
+            }
         }
         drawWorld();
     </script>
