@@ -52,7 +52,7 @@ io.on("connection", function(socket) {
     console.log(socket.handshake.address);
     var sessionId = socket.id;
     console.log("connection made for sessionId = " + sessionId);
-    var turret = new Turret(Math.round(Math.random() * MAX_X - 40) + 20, Math.round(Math.random() * MAX_Y - 40) + 20, sessionId);
+    var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, sessionId);
     var playerSession = new PlayerSession(sessionId, turret);
     socket.emit("connected", {
         "sessionId": sessionId,
@@ -159,11 +159,28 @@ Turret.prototype = {
         var turrety = this.y;
         if (this.hor != 0 && this.ver != 0) {
             turretx = this.x + this.hor * this.speed * Math.cos(Math.PI / 4);
+            var mousePosXTemp = this.mousePosX + this.hor * this.speed * Math.cos(Math.PI / 4);
+            if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
+                this.mousePosX = mousePosXTemp;
+            }
             turrety = this.y + this.ver * this.speed * Math.sin(Math.PI / 4);
+            var mousePosYTemp = this.mousePosY + this.ver * this.speed * Math.cos(Math.PI / 4);
+            if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {                
+                this.mousePosY = mousePosYTemp;
+            }
+            
         } else if (this.hor != 0) {
             turretx = this.x + this.hor * this.speed;
+            var mousePosXTemp = this.mousePosX + this.hor * this.speed;
+            if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
+                this.mousePosX = mousePosXTemp;
+            }
         } else if (this.ver != 0) {
             turrety = this.y + this.ver * this.speed;
+            var mousePosYTemp = this.mousePosY + this.ver * this.speed;
+            if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {                
+                this.mousePosY = mousePosYTemp;
+            }
         }
         if (turretx - this.baseRadius >= 0 && turretx + this.baseRadius <= MAX_X) {
             this.x = turretx;
@@ -171,10 +188,11 @@ Turret.prototype = {
         if (turrety - this.baseRadius >= 0 && turrety + this.baseRadius <= MAX_Y) {
             this.y = turrety;
         }
-	this.x = Math.round(this.x);
-	this.y = Math.round(this.y);
+    	this.x = Math.round(this.x);
+    	this.y = Math.round(this.y);
         this.angle = Math.atan2(this.mousePosY - this.y,
             this.mousePosX - this.x);
+            console.log("angle : " + this.angle + ", mousePosX : " + this.mousePosX + ", mousePosY : " + this.mousePosY + ", x : " + this.x + ", y : " + this.y);
         var recoilAngle = this.angle + Math.PI;
         this.recoilX = Math.round(this.x + this.recoil * Math.cos(recoilAngle));
         this.recoilY = Math.round(this.y + this.recoil * Math.sin(recoilAngle));

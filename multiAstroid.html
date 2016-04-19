@@ -337,7 +337,8 @@
                 "sessionId": sessionId,
                 "hor": hor,
                 "ver": ver
-            });
+            }); 
+            //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
         }, true);
         window.addEventListener('keyup', function(event) {
             switch (event.keyCode) {
@@ -366,7 +367,8 @@
             //if (event.stopPropagation) { event.stopPropagation(); }
             socket.emit("moveEnd", {
                 "sessionId": sessionId
-            });
+            }); 
+            //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
         }, true);
 
         function drawTurrets() {
@@ -627,7 +629,7 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "yellow";
-            ctx.fillText("Debug: " + info, 10, 20);
+            ctx.fillText("Debug: " + info, 10, 50);
             ctx.restore();
         }
         // Constructor
