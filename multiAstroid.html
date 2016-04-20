@@ -90,7 +90,7 @@
         var scores = [];
         var socket = null;
         var sessionId = null;
-        var transparency = 0.2;
+        var transparency = 0.9;
         var starsPositions = [];
         var nickName = "";
 
@@ -693,6 +693,8 @@
             this.color = color;
             this.id = id;
             Bullet.all[id] = this;
+            this.cvs = null;
+            this.cvsCtx = null;
         }
         Bullet.all = {};
         Bullet.draw_all = function() {
@@ -705,15 +707,24 @@
         };
         Bullet.prototype = {
             draw: function() {
+                if (this.cvs == null) {
+                    this.cvs = document.createElement("canvas");
+                    this.cvs.width = this.r * 2;
+                    this.cvs.height = this.r * 2;
+                    this.cvsCtx = this.cvs.getContext("2d");
+                    this.cvsCtx.save();
+                    //cvsCtx.translate(getXOffset() + this.x, getYOffset() + this.y);
+                    this.cvsCtx.fillStyle = this.color;
+                    this.cvsCtx.strokeStyle = "black";
+                    this.cvsCtx.beginPath();
+                    this.cvsCtx.arc(this.r, this.r, this.r, 0, Math.PI * 2, true);
+                    this.cvsCtx.closePath();
+                    this.cvsCtx.fill();
+                    this.cvsCtx.stroke();
+                    this.cvsCtx.restore();
+                }
                 ctx.save();
-                ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
-                ctx.fillStyle = this.color;
-                ctx.strokeStyle = "black";
-                ctx.beginPath();
-                ctx.arc(0, 0, this.r, 0, Math.PI * 2, true);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                ctx.drawImage(this.cvs, getXOffset() + this.x, getYOffset() + this.y, this.r * 2, this.r * 2);
                 ctx.restore();
             },
             remove: function() {
@@ -745,7 +756,9 @@
             this.drawangle = 0;
             this.spinDirection = 1;
             this.numEdges = 18;
-            this.id = id;
+            this.id = id; 
+            this.cvs = null;
+            this.cvsCtx = null;
         }
         Rock.all = {};
         Rock.deserialize = function(data) {
@@ -780,32 +793,43 @@
                 delete Rock.all[this.id];
             },
             draw: function() {
+                if (this.cvs == null) {
+                    this.cvs = document.createElement("canvas");
+                    this.cvs.width = this.r * 2;
+                    this.cvs.height = this.r * 2;
+                    this.cvsCtx = this.cvs.getContext("2d");
+                    this.cvsCtx.save();
+                    //this.cvsCtx.rotate(this.drawangle * Math.PI / 180);
+                    //this.drawangle = (this.drawangle + (1 * this.spinDirection)) % 360;
+                    this.cvsCtx.fillStyle = this.color;
+                    this.cvsCtx.strokeStyle = "black";
+                    this.cvsCtx.lineWidth = 1;
+                    this.cvsCtx.beginPath();
+                    var isFirst = 1;
+                    for (var idx in this.coords) {
+                        var coord = this.coords[idx];
+                        if (isFirst == 1) {
+                            this.cvsCtx.moveTo(coord[0] + this.r, coord[1] + this.r);
+                            isFirst = 0;
+                        } else {
+                            this.cvsCtx.lineTo(coord[0] + this.r, coord[1] + this.r);
+                        }
+                    }
+                    this.cvsCtx.closePath();
+                    this.cvsCtx.fill();
+                    this.cvsCtx.stroke();
+                    if (this.color == "lightblue") {
+                        this.cvsCtx.font = "bold 12pt Courier New";
+                        this.cvsCtx.fillStyle = "red";
+                        this.cvsCtx.fillText("+", this.r, this.r);
+                    }
+                    this.cvsCtx.restore();
+                }
                 ctx.save();
                 ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
                 ctx.rotate(this.drawangle * Math.PI / 180);
                 this.drawangle = (this.drawangle + (1 * this.spinDirection)) % 360;
-                ctx.fillStyle = this.color;
-                ctx.strokeStyle = "black";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                var isFirst = 1;
-                for (var idx in this.coords) {
-                    var coord = this.coords[idx];
-                    if (isFirst == 1) {
-                        ctx.moveTo(coord[0], coord[1]);
-                        isFirst = 0;
-                    } else {
-                        ctx.lineTo(coord[0], coord[1]);
-                    }
-                }
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                if (this.color == "lightblue") {
-                    ctx.font = "bold 12pt Courier New";
-                    ctx.fillStyle = "red";
-                    ctx.fillText("+", 0, 0);
-                }
+                ctx.drawImage(this.cvs, -this.r, -this.r);
                 ctx.restore();
             }
         };
