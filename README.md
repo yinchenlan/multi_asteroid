@@ -1,4 +1,4 @@
 multi_asteroid
 =============
 
-Multiplayer Asteroids
+Multiplayer Asteroids-Like Game
