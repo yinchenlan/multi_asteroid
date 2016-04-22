@@ -4,8 +4,10 @@ var app = require('http').createServer(handler),
     url = require('url'),
     util = require('util'),
     scores = [],
-    MAX_X = 800,
-    MAX_Y = 600,
+    MAX_X = 1600,
+    MAX_Y = 1200,
+    NUM_ROCKS = 10,
+    NUM_STARS = 500,
     port = process.env.PORT || 8125,
     commandQueue = [],
     starPositions=[];
@@ -14,7 +16,7 @@ app.listen(port);
 console.log("starting app");
 
 function initializeStarsPositions() {
-    for(i = 0; i < 100; i++) {
+    for(i = 0; i < NUM_STARS; i++) {
 	var x = Math.round(Math.random() * MAX_X);
 	var y = Math.round(Math.random() * MAX_Y);
 	starPositions.push([x, y]);
@@ -251,6 +253,7 @@ PlayerSession.prototype = {
 
 initializeStarsPositions();
 
+//Tick the world
 var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
@@ -283,15 +286,11 @@ var t = setInterval(function() {
     moveRocks();
     createAllBullets();
     moveBullets();
-
-    //io.sockets.emit("updateWorld", {
-    //    "turretMoves": turretMoves
-    //});
     addCommand(["turretMoves", {
-        "turretMoves": turretMoves}]);
+		"turretMoves": turretMoves}]);
     io.sockets.emit("updateWorld", {"updateWorld" : commandQueue});
     commandQueue = [];    
-}, 1000 / 22);
+}, 1000 / 30);
 
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
@@ -427,7 +426,7 @@ function createRocks() {
         rockDate = currDate;
     } else {
         if ((currDate - rockDate) > 200 &&
-            Rock.all.length < 4 + Math.floor( /*score = */ 20 / 20)) {
+            Rock.all.length < NUM_ROCKS + Math.floor( /*score = */ 20 / 20)) {
             var side = Math.floor(Math.random() * 4);
             var startx = 0,
                 starty = 0;

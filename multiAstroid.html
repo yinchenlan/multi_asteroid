@@ -12,7 +12,7 @@
     <table>
         <tr>
             <td>
-                <canvas id="gameCanvas" width="400" height="300" tabindex="1"></canvas>
+                <canvas id="gameCanvas" width="800" height="600" tabindex="1"></canvas>
                 <audio id="laser" src="laser.wav" style="display: none;"></audio>
                 <form name = "nameForm" action="#"> 
                 <font color="white">Enter Name: </font><input type="text" name="nickName">
@@ -49,12 +49,12 @@
 
         function getXOffset() {
             var negX = -1 * PlayerSession.all[sessionId].turret.x;
-            return negX + 200;
+            return negX + 400;
         }
 
         function getYOffset() {
             var negY = -1 * PlayerSession.all[sessionId].turret.y;
-            return negY + 150;
+            return negY + 300;
         }
 
         function getMousePos(canvas, evt) {
@@ -99,7 +99,7 @@
 
         function connect() {
             gameOver = 0;
-            return io.connect(window.location.hostname/* + ":8125"*/);
+            return io.connect(window.location.hostname + ":8125");
         }
 
         function updateSocket() {
@@ -505,7 +505,8 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "white";
-            ctx.fillText("Players: " + Object.keys(PlayerSession.all).length, 300, 25);
+            ctx.fillText("# Players: " + Object.keys(PlayerSession.all).length, 700, 25);
+	    ctx.fillText("Leader Board: " + Object.keys(PlayerSession.all).length, 700, 35);
             ctx.restore();
         }
 
@@ -520,8 +521,8 @@
         function drawHelp() {
             ctx.save();
             ctx.font = "8pt Courier New";
-            ctx.fillStyle = "#6495ED";
-            ctx.fillText("\u2190 a, \u2192 d, \u2191 w, \u2193 s, Left Mouse Button", 10, 10);
+            ctx.fillStyle = "yellow";
+            ctx.fillText("\u2190 a, \u2192 d, \u2191 w, \u2193 s, Left Mouse Button", 250, 25);
             ctx.restore();
         }
 
@@ -654,7 +655,7 @@
             this.ver = 0;
             this.color = color;
             this.angle = 0;
-            this.baseRadius = 10;
+            this.baseRadius = 15;
             this.mousePosX = 250;
             this.mousePosY = 250;
             this.recoilX = 0;
