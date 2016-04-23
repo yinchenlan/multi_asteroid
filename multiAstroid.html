@@ -743,7 +743,8 @@
                     this.cvsCtx.restore();
                 }
                 ctx.save();
-                ctx.drawImage(this.cvs, getXOffset() + this.x, getYOffset() + this.y, this.r * 2, this.r * 2);
+                ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
+                ctx.drawImage(this.cvs, -this.r, -this.r);
                 ctx.restore();
             },
             remove: function() {
