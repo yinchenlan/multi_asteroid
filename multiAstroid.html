@@ -94,6 +94,13 @@
         var starsPositions = [];
         var nickName = "";
 
+	var sInterval = setInterval(function() {
+            scores = PlayerSession.all;
+            scores.sort(function(a, b) {
+                return b.kills - a.kills;
+            });
+	}, 1000);
+
         var laser = document.getElementById("laser");
 
 
@@ -505,8 +512,7 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "white";
-            ctx.fillText("# Players: " + Object.keys(PlayerSession.all).length, 700, 25);
-	    ctx.fillText("Leader Board: " + Object.keys(PlayerSession.all).length, 700, 35);
+            ctx.fillText("# Players: " + Object.keys(PlayerSession.all).length, 600, 25);
             ctx.restore();
         }
 
@@ -553,26 +559,24 @@
 
         function drawScores() {
             ctx.save();
-            ctx.font = "bold 24pt Calibri";
+            ctx.font = "12pt Calibri";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("Top Ten Scores", 130, 100);
+            ctx.fillText("Leader Board : ", 650, 100);
             ctx.restore();
             ctx.save();
             ctx.font = "12pt Courier New";
-            ctx.fillStyle = "yellow";
-            var inc = 10;
+            ctx.fillStyle = "green";
+            var inc = 20;
             //debug("scores " + scores);
             for (var idx in scores) {
                 if (idx > 9) break;
                 var sc = scores[idx];
-                ctx.fillText("" + idx + ". " + sc, 200, 130 + inc);
-                inc += 15;
+                ctx.fillText("" + sc.name + " : " + sc.kills, 650, 100 + inc);
+                inc += 20;
             }
             ctx.restore();
-            drawScoresDone = 1;
-        }
-        var drawScoresDone = 0;
-
+         }
+ 
         function moveRocks() {
             for (var rockId in Rock.all) {
                 if (Rock.all.hasOwnProperty(rockId)) {
@@ -900,7 +904,7 @@
               Bullet.draw_all();
               // Draw rocks
               Rock.draw_all();
-              //drawScore();
+              drawScores();
               drawHelp();
               drawLocation();
               drawNumPlayers();
