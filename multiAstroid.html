@@ -517,9 +517,9 @@
                 ctx.save();
                 ctx.font = "8pt Courier New";
                 ctx.fillStyle = "white";
-                ctx.globalAlpha = .2;
-                ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 22);
-                ctx.fillText("kls: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
+                ctx.globalAlpha = .5;
+                ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
+                ctx.fillText("kills: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
                 ctx.restore();
             }
         }
