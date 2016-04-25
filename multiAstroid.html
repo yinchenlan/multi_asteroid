@@ -12,7 +12,7 @@
     <table>
         <tr>
             <td>
-                <canvas id="gameCanvas" width="800" height="600" tabindex="1"></canvas>
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
                 <audio id="laser" src="laser.wav" style="display: none;"></audio>
                 <form name = "nameForm" action="#"> 
                 <font color="white">Enter Name: </font><input type="text" name="nickName">
@@ -49,12 +49,24 @@
 
         function getXOffset() {
             var negX = -1 * PlayerSession.all[sessionId].turret.x;
-            return negX + 400;
+            var offset = negX + MAX_X/4;
+	    if (PlayerSession.all[sessionId].turret.x < MAX_X/4) {
+	        return 0;
+            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - MAX_X/4) {
+	        return -MAX_X/2;
+	    }
+            return offset;
         }
 
         function getYOffset() {
             var negY = -1 * PlayerSession.all[sessionId].turret.y;
-            return negY + 300;
+            var offset = negY + MAX_Y/4;
+            if (PlayerSession.all[sessionId].turret.y < MAX_Y/4) {
+		return 0;       
+            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - MAX_Y/4) {
+	  return -MAX_Y/2;
+            }
+            return offset;
         }
 
         function getMousePos(canvas, evt) {
@@ -93,6 +105,8 @@
         var transparency = 0.9;
         var starsPositions = [];
         var nickName = "";
+        var MAX_X = 1600;
+        var MAX_Y = 1200;
         
         function strcmp(a, b) {
             if (a.toString() < b.toString()) return -1;
