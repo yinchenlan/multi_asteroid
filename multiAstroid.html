@@ -280,11 +280,11 @@
             }
         }
 
-        var removeStuff = setInterval(function() {
+        function removeStuff() {
             for (let item of deletePlayerSessionSet) removePlayer(item);
             for (let item of deleteRockSet) removeRock(item);
 	    for (let item of deleteBulletSet) removeBullet(item);
-        }, 1000 / 30);
+        }
 
         function executeCommand(command) {
             //debug("command : " + command[0]);
@@ -931,7 +931,8 @@
         }
 
         function drawWorld() {
-              requestAnimationFrame(drawWorld);  
+              requestAnimationFrame(drawWorld);
+              removeStuff();  
               if (gameOver == 1) {
                  PlayerSession.all = {};
 		 Rock.all = {};
