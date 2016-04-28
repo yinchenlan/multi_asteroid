@@ -105,6 +105,9 @@
         var transparency = 0.9;
         var starsPositions = [];
         var nickName = "";
+        var deleteRockSet = new Set();
+        var deleteBulletSet = new Set();
+        var deletePlayerSessionSet = new Set();
         var MAX_X = 1600;
         var MAX_Y = 1200;
         
@@ -176,14 +179,16 @@
 
         function removePlayer(data) {
             //debug("removePlayer");
-            var ps = PlayerSession.all[data["sessionId"]];
-            if (data["sessionId"] == sessionId) {
+	    //deletePlayerSessionSet.add(data["sessionId"]);
+            var ps = PlayerSession.all[data];
+            if (data == sessionId) {
                 socket.disconnect();
                 gameOver = 1;
                 unhideForm();
             }
             //alert("removing session " + sessionId);
             ps.remove();
+            deletePlayerSessionSet.delete(data);
         };
 
         function damagePlayer(data) {
@@ -216,12 +221,14 @@
 
         function removeBullet(data) {
             //debug("removeBullet");
-            delete Bullet.all[data["id"]];
+            delete Bullet.all[data];
+            deleteBulletSet.delete(data);
         };
 
         function removeRock(data) {
             //debug("removeRock");
-            delete Rock.all[data["id"]];
+            delete Rock.all[data];
+            deleteRockSet.delete(data);
         };
 
 
@@ -273,11 +280,18 @@
             }
         }
 
+        var removeStuff = setInterval(function() {
+            for (let item of deletePlayerSessionSet) removePlayer(item);
+            for (let item of deleteRockSet) removeRock(item);
+	    for (let item of deleteBulletSet) removeBullet(item);
+        }, 1000 / 30);
+
         function executeCommand(command) {
             //debug("command : " + command[0]);
             switch (command[0]) {
                 case "removePlayer":
-                    removePlayer(command[1]);
+                    deletePlayerSessionSet.add(command[1]["sessionId"]);
+                    //removePlayer(command[1]);
                     break;
                 case "damagePlayer":
                     damagePlayer(command[1]);
@@ -292,10 +306,12 @@
                     createBullet(command[1]);
                     break;
                 case "removeBullet":
-                    removeBullet(command[1]);
+                    deleteBulletSet.add(command[1]["id"]);
+                    //removeBullet(command[1]);
                     break;
                 case "removeRock":
-                    removeRock(command[1]);
+                    deleteRockSet.add(command[1]["id"]);
+                    //removeRock(command[1]);
                     break;
                 case "turretMoves":
                     turretMoves(command[1]);
@@ -916,7 +932,15 @@
 
         function drawWorld() {
               requestAnimationFrame(drawWorld);  
-              if (gameOver == 1) drawGameOver();
+              if (gameOver == 1) {
+                 PlayerSession.all = {};
+		 Rock.all = {};
+                 Bullet.all = {};
+                 deletePlayerSessionSet = new Set();
+                 deleteRockSet = new Set();
+                 deleteBulletSet = new Set();
+	         drawGameOver();
+              }
               else {
               // Clear display                
               ctx.save();

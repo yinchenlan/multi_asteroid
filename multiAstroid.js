@@ -10,7 +10,8 @@ var app = require('http').createServer(handler),
     NUM_STARS = 500,
     port = process.env.PORT || 8125,
     commandQueue = [],
-    starPositions=[];
+    starPositions=[],
+    bots = {/*playerSessionId : botStateMachine*/};
 
 app.listen(port);
 console.log("starting app");
@@ -292,6 +293,25 @@ var t = setInterval(function() {
     commandQueue = [];    
 }, 1000 / 30);
 
+function BotStateMachine() {
+    this.state = 'WANDER';
+    this.destX = 0;
+    this.destY = 0;
+    this.lastTicked = new Date();
+    this.tickFreq = 500;
+}
+
+BotStateMachine.prototype = {
+    tick: function() {
+	var now = new Date();
+	if (now - lastTicked > tickFreq) {
+	    this.destX = Math.round(Math.random() * MAX_X);
+	    this.destY = Math.round(Math.random() * MAX_Y);
+	    this.lastTicked = now;
+	}
+    }
+}
+
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
     this.x = x;
@@ -331,9 +351,7 @@ Bullet.prototype = {
         };
     },
     getId: function() {
-        var val = Bullet.id;
-        Bullet.id = (Bullet.id + 1) % 10000;
-        return val;
+        return generateUUID();
     }
 };
 
@@ -407,11 +425,19 @@ Rock.prototype = {
         return retVal;
     },
     getId: function() {
-        var val = Rock.id;
-        Rock.id = (Rock.id + 1) % 200;
-        return val;
+	return generateUUID();
     }
 };
+
+function generateUUID(){
+    var d = new Date().getTime();
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+	    var r = (d + Math.random()*16)%16 | 0;
+	    d = Math.floor(d/16);
+	    return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+	});
+    return uuid;
+}
 
 function rndColor() {
     var simpleColors = ["grey", "silver", "lightblue"];
