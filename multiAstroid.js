@@ -55,7 +55,7 @@ function createBOT() {
     var id = generateUUID();
     var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, id);
     var playerSession = new PlayerSession(id, turret, 1);
-    playerSession.name = "BOT";
+    playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
 }
 
 function createPlayerSession(id, socket) {
@@ -310,6 +310,9 @@ PlayerSession.prototype = {
         }
         this.turret.mousePosX = this.bsm.destX;
         this.turret.mousePosY = this.bsm.destY;
+    },
+    attack: function() {
+        
     }
 };
 
@@ -320,7 +323,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 50) {
+    if (Object.keys(PlayerSession.all).length < 10) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
