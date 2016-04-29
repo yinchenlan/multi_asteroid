@@ -102,7 +102,7 @@
         var scores = [];
         var socket = null;
         var sessionId = null;
-        var transparency = 0.9;
+        var transparency = 0.1;
         var starsPositions = [];
         var nickName = "";
         var deleteRockSet = new Set();
@@ -181,14 +181,16 @@
             //debug("removePlayer");
 	    //deletePlayerSessionSet.add(data["sessionId"]);
             var ps = PlayerSession.all[data];
-            if (data == sessionId) {
-                socket.disconnect();
-                gameOver = 1;
-                unhideForm();
-            }
-            //alert("removing session " + sessionId);
-            ps.remove();
+            if (ps != null) {
+                if (data == sessionId) {
+                    socket.disconnect();
+                    gameOver = 1;
+                    unhideForm();
+                }
+                //alert("removing session " + sessionId);
+                ps.remove();
             deletePlayerSessionSet.delete(data);
+            }
         };
 
         function damagePlayer(data) {
@@ -221,14 +223,18 @@
 
         function removeBullet(data) {
             //debug("removeBullet");
-            delete Bullet.all[data];
-            deleteBulletSet.delete(data);
+            if (Bullet.all[data] != null) {
+                delete Bullet.all[data];
+                deleteBulletSet.delete(data);
+            }
         };
 
         function removeRock(data) {
             //debug("removeRock");
-            delete Rock.all[data];
-            deleteRockSet.delete(data);
+            if(Rock.all[data] != null) {
+                delete Rock.all[data];
+                deleteRockSet.delete(data);
+            }
         };
 
 
@@ -447,17 +453,7 @@
             // Draw base
             ctx.save();
             ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
-            var now = new Date();
-            if (now - turret.date > 250) {
-                if (turret.fillIdx == 0) {
-                    turret.fillIdx = 1;
-                } else {
-                    turret.fillIdx = 0;
-                }
-                turret.date = now;
-            }
-            var turretFillStyle = ["grey", turret.color];
-            ctx.fillStyle = turretFillStyle[turret.fillIdx];
+            ctx.fillStyle = turret.color;
             ctx.strokeStyle = "black";
             if (!isYou)
                 ctx.globalAlpha = transparency;
@@ -481,9 +477,9 @@
             ctx.fill();
             ctx.stroke();
             ctx.restore();
+
             // Draw Gun
             ctx.save();
-
             var angle1 = turret.angle + Math.PI / 2;
             var x1 = turret.recoilX + 2.5 * Math.cos(angle1);
             var y1 = turret.recoilY + 2.5 * Math.sin(angle1);
@@ -500,9 +496,11 @@
             ctx.lineWidth = 1;
             ctx.fillStyle = "silver";
             ctx.strokeStyle = "black";
-            //if (!isYou)
+            //if (!isYou) alert("got here");
             ctx.globalAlpha = 0.2;
             ctx.beginPath();
+            //if (isYou)
+            //alert(x1 + "," + y1 + "," + x2 + "," + y2);
             ctx.moveTo(getXOffset() + turret.recoilX, getYOffset() + turret.recoilY);
             ctx.lineTo(getXOffset() + x1, getYOffset() + y1);
             ctx.lineTo(getXOffset() + x2, getYOffset() + y2);
@@ -515,6 +513,7 @@
             if (turret.recoil > 0) {
                 turret.recoil = turret.recoil - 1;
             }
+		  //if (!isYou)alert("got here");
             if (isGhost) {
                 ctx.save();
                 ctx.font = "8pt Courier New";
@@ -603,19 +602,19 @@
 
         function drawScores() {
             ctx.save();
-            ctx.font = "12pt Calibri";
+            ctx.font = "8pt Calibri";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("Leader Board : ", 650, 100);
+            ctx.fillText("Leader Board : ", 680, 50);
             ctx.restore();
             ctx.save();
-            ctx.font = "12pt Courier New";
+            ctx.font = "8pt Calibri";
             ctx.fillStyle = "green";
             var inc = 20;
             //debug("scores " + scores);
             for (var idx in scores) {
                 if (idx > 9) break;
                 var sc = scores[idx];
-                ctx.fillText("" + sc.name + " : " + sc.kills, 650, 100 + inc);
+                ctx.fillText("" + sc.name + " : " + sc.kills, 680, 50 + inc);
                 inc += 20;
             }
             ctx.restore();

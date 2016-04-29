@@ -51,23 +51,38 @@ function handler(req, res) {
      }   
 }
 
+function createBOT() {
+    var id = generateUUID();
+    var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, id);
+    var playerSession = new PlayerSession(id, turret, 1);
+    playerSession.name = "BOT";
+}
+
+function createPlayerSession(id, socket) {
+    var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, id);
+    var playerSession = new PlayerSession(id, turret, 0);
+    playerSession.name = "BOT";
+    if (socket != null) {
+        socket.emit("connected", {
+	        "sessionId": id,
+		    "x": turret.x,
+		    "y": turret.y,
+		    "color": turret.color,
+		    "isNew": playerSession.isNew(),
+		    "timeLeft": 6000 - (new Date().getTime() - turret.date.getTime()),
+		    "life": turret.life,
+		    "MAX_X": MAX_X,
+		    "MAX_Y": MAX_Y
+		    });
+    }
+    return playerSession;
+}
+
 io.on("connection", function(socket) {
     console.log(socket.handshake.address);
     var sessionId = socket.id;
     console.log("connection made for sessionId = " + sessionId);
-    var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, sessionId);
-    var playerSession = new PlayerSession(sessionId, turret);
-    socket.emit("connected", {
-        "sessionId": sessionId,
-        "x": turret.x,
-        "y": turret.y,
-        "color": turret.color,
-        "isNew": playerSession.isNew(),
-        "timeLeft": 6000 - (new Date().getTime() - turret.date.getTime()),
-        "life": turret.life,
-        "MAX_X": MAX_X,
-        "MAX_Y": MAX_Y
-    });
+    createPlayerSession(sessionId, socket);
     socket.emit("stars", {"stars": starPositions});
     for (var rockId in Rock.all) {
         socket.emit("createRock", Rock.all[rockId].serialize());
@@ -218,7 +233,17 @@ function nextTurretColor() {
     return turretColors[colorIdx];
 }
 
-function PlayerSession(sessionId, turret) {
+function BSM () {
+    this.state = 'WANDER';
+    this.destX = Math.round(Math.random() * MAX_X);
+    this.destY = Math.round(Math.random() * MAX_Y);
+    this.currVx = 0;
+    this.currVy = 0;
+    this.lastTicked = new Date();
+    this.tickFreq = 2000;
+}
+
+function PlayerSession(sessionId, turret, isBot) {
     this.sessionId = sessionId;
     this.turret = turret;
     this.moved = false;
@@ -227,6 +252,11 @@ function PlayerSession(sessionId, turret) {
     this.date = new Date();
     this.kills = 0;
     this.name = "";
+    this.bsm = null;
+    this.isBot = isBot;
+    if (isBot==1) {
+	this.bsm = new BSM();
+    }
     PlayerSession.all[this.sessionId] = this;
 }
 
@@ -249,6 +279,37 @@ PlayerSession.prototype = {
             }]); 
             return false;
         }
+    },
+    tick: function() {
+        //console.log("tick");
+        var now = new Date();
+	if (now - this.bsm.lastTicked > this.bsm.tickFreq) {
+	    this.bsm.destX = Math.round(Math.random() * MAX_X);
+            this.bsm.destY = Math.round(Math.random() * MAX_Y);
+            this.bsm.lastTicked = now;
+        }
+        var angle = Math.atan2(this.bsm.destY - this.turret.y, this.bsm.destX - this.turret.x);
+        var destVx = Math.cos(angle);
+        var destVy = Math.sin(angle);
+        var dVx = (destVx - this.bsm.currVx) * .1;
+        var dVy = (destVy - this.bsm.currVy) * .1;
+        //var nAngle = Math.atan2(dVx, dVy);
+        this.bsm.currVx = this.bsm.currVx + /*Math.cos(nAngle)*/ dVx;
+        this.bsm.currVy = this.bsm.currVy + /*Math.sin(nAngle)*/ dVy;
+        //nAngle = Math.atan2(this.bsm.currVx, this.bsm.currVy);
+        //this.bsm.currVx = Math.cos(nAngle);
+        //this.bsm.currVy = Math.sin(nAngle);
+        this.turret.x = this.turret.x + this.turret.speed * this.bsm.currVx;
+        this.turret.y = this.turret.y + this.turret.speed * this.bsm.currVy;
+        this.turret.angle = angle;
+        var recoilAngle = angle + Math.PI;
+        this.turret.recoilX = Math.round(this.turret.x + this.turret.recoil * Math.cos(recoilAngle));
+        this.turret.recoilY = Math.round(this.turret.y + this.turret.recoil * Math.sin(recoilAngle));
+        if (this.turret.recoil > 0) {
+            this.turret.recoil -= 1;
+        }
+        this.turret.mousePosX = this.bsm.destX;
+        this.turret.mousePosY = this.bsm.destY;
     }
 };
 
@@ -259,12 +320,17 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
+    if (Object.keys(PlayerSession.all).length < 50) {
+	createBOT();
+    }
     for (var key in PlayerSession.all) {
         if (PlayerSession.all.hasOwnProperty(key)) {
             var ps = PlayerSession.all[key];
             var sessionId = ps.sessionId;
             var turret = ps.turret;
-            turret.move();
+            if (ps.isBot == 1) ps.tick();
+            else 
+               turret.move();
             turretMoves.push({
                 "sessionId": sessionId,
                 "x": turret.x,
@@ -281,7 +347,7 @@ var t = setInterval(function() {
                 "nickName": ps.name,
                 "life": turret.life
             });
-        }
+       }
     }
     createRocks();
     moveRocks();
@@ -292,25 +358,6 @@ var t = setInterval(function() {
     io.sockets.emit("updateWorld", {"updateWorld" : commandQueue});
     commandQueue = [];    
 }, 1000 / 30);
-
-function BotStateMachine() {
-    this.state = 'WANDER';
-    this.destX = 0;
-    this.destY = 0;
-    this.lastTicked = new Date();
-    this.tickFreq = 500;
-}
-
-BotStateMachine.prototype = {
-    tick: function() {
-	var now = new Date();
-	if (now - lastTicked > tickFreq) {
-	    this.destX = Math.round(Math.random() * MAX_X);
-	    this.destY = Math.round(Math.random() * MAX_Y);
-	    this.lastTicked = now;
-	}
-    }
-}
 
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
@@ -495,6 +542,7 @@ function moveRocks() {
     var i = Rock.all.length;
     while (i--) {
         var rock = Rock.all[i];
+        if (rock == null) continue;
         rock.x += rock.vx;
         rock.y += rock.vy;
         addCommand(["updateRock", {"id" : rock.id, "x" : rock.x, "y" : rock.y}]);
@@ -525,6 +573,7 @@ function rockCollideTurret(rock, ps) {
             addCommand(["removePlayer", {
                 "sessionId": ps.sessionId
             }]);
+            ps.remove();
         } else {
             ps.turret.life = ps.turret.life - damage;
             //io.sockets.emit("damagePlayer", {
@@ -558,6 +607,7 @@ function bulletCollideTurret(bullet) {
                     addCommand(["removePlayer", {
                         "sessionId": ps.sessionId
                     }]);
+                    ps.remove();
                 } else {
                     ps.turret.life = ps.turret.life - damage;
                     //io.sockets.emit("damagePlayer", {
@@ -608,6 +658,7 @@ function moveBullets() {
     var i = Bullet.all.length;
     while (i--) {
         var bullet = Bullet.all[i];
+        if (bullet == null) continue;
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
         addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
