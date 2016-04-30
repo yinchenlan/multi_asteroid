@@ -108,6 +108,7 @@ io.on("connection", function(socket) {
         var hor = data["hor"];
         var ver = data["ver"];
         var ps = PlayerSession.all[socket.id];
+        if (ps == null) return;
         var turret = ps.turret;
         turret.hor = hor;
         turret.ver = ver;
@@ -117,6 +118,7 @@ io.on("connection", function(socket) {
         //console.log("moving player end");
         var sessionId = data["sessionId"];
         var ps = PlayerSession.all[socket.id];
+        if (ps == null) return;
         var turret = ps.turret;
         turret.hor = 0;
         turret.ver = 0;
@@ -124,6 +126,7 @@ io.on("connection", function(socket) {
 
     socket.on("mousePos", function(data) {
         var ps = PlayerSession.all[socket.id];
+        if (ps == null) return;
         var turret = ps.turret;
         turret.mousePosX = data["mousePosX"];
         turret.mousePosY = data["mousePosY"];
@@ -218,6 +221,7 @@ Turret.prototype = {
         if (this.recoil > 0) {
             this.recoil -= 1;
         }
+        turretCollideTurret(this);
     }
 };
 
@@ -249,7 +253,7 @@ function BSM () {
 }
 
 BSM.prototype = {
-    getMostThreateningObstacle: function() {
+    getMostThreateningObstacle: function(sessionId) {
         var x = 0;
         var y = 0;
         var currMin = 1000000;
@@ -271,6 +275,27 @@ BSM.prototype = {
                 y = rock.y;
                 //console.log("dist : " + dist + ", radius : " + rock.r);
             }    
+        }
+
+        for (var idx in PlayerSession.all) {
+            var turret = PlayerSession.all[idx].turret;
+            if (turret.sessionId == sessionId) continue;
+            var dist = this.getDistance(turret.x, turret.y, this.shortAheadX, this.shortAheadY);
+            //console.log("dist : " + dist + ", radius : " + turret.baseRadius);                                                                                                                                                     
+            if(dist <= 30 && dist < currMin) {
+                currMin = dist;
+                x = turret.x;
+                y = turret.y;
+                //console.log("dist : " + dist);                                                                                                                                                 
+                //continue;
+            }
+            dist = this.getDistance(turret.x, turret.y, this.aheadX, this.aheadY);
+            if(dist <= 30 && dist < currMin) {
+                currMin = dist;
+                x = turret.x;
+                y = turret.y;
+                //console.log("dist : " + dist);                                                                                                                                                 
+            }
         }
         if (currMin < 10000) 
             return [x, y];
@@ -340,6 +365,7 @@ PlayerSession.prototype = {
         }
         this.turret.mousePosX = this.bsm.destX;
         this.turret.mousePosY = this.bsm.destY;
+        turretCollideTurret(this.turret);
     },
     wander: function() {
         var now = new Date();
@@ -359,11 +385,11 @@ PlayerSession.prototype = {
     },
     avoid: function() {
         this.bsm.calculateAheadVector(this.turret.x, this.turret.y);
-	var pos = this.bsm.getMostThreateningObstacle();
+	var pos = this.bsm.getMostThreateningObstacle(this.turret.sessionId);
         if (pos != null) { 
             var angle = Math.atan2(this.bsm.aheadY - pos[1], this.bsm.aheadX - pos[0]);
-            var avoidanceX = Math.cos(angle) * .5;
-            var avoidanceY = Math.sin(angle) * .5;
+            var avoidanceX = Math.cos(angle) * .9;
+            var avoidanceY = Math.sin(angle) * .9;
             this.bsm.currVx = this.bsm.currVx + avoidanceX;
             this.bsm.currVy = this.bsm.currVy + avoidanceY;
         }
@@ -677,6 +703,53 @@ function bulletCollideTurret(bullet) {
                     }]);
                 }
                 bullet.remove();
+            }
+        }
+    }
+}
+
+function turretCollideTurret(turret) {
+    //console.log("turretCollideTurret");
+    for (var idx in PlayerSession.all) {
+        if (PlayerSession.all.hasOwnProperty(idx)) {
+            var ps = PlayerSession.all[idx];
+            if (ps.isNew()) {
+                continue;
+            }
+            if (ps.turret.sessionId == turret.sessionId) continue;
+            var dist = distance(ps.turret.x, ps.turret.y, turret.x, turret.y);
+            //console.log("dist " + dist);
+            if (dist <= (turret.baseRadius + ps.turret.baseRadius)) {
+                //console.log("collided");
+                var damage = 20;
+                if (ps.turret.life - damage <= 0) {
+                    var shooterSession = PlayerSession.all[turret.sessionId];
+                    shooterSession.kills += 1;
+                    addCommand(["removePlayer", {
+				"sessionId": ps.sessionId
+				    }]);
+                    ps.remove();
+                } else {
+                    ps.turret.life = ps.turret.life - damage;
+                    addCommand(["damagePlayer", {
+				"sessionId": ps.sessionId,
+				    "life": ps.turret.life
+				    }]);
+                }
+                var playerSession = PlayerSession.all[turret.sessionId];
+                if (playerSession.turret.life - damage <= 0) {
+                    ps.kills += 1;
+                    addCommand(["removePlayer", {
+                                "sessionId": playerSession.sessionId
+                                    }]);
+                    playerSession.remove();
+                } else {
+                    playerSession.turret.life = playerSession.turret.life - damage;
+                    addCommand(["damagePlayer", {
+                                "sessionId": playerSession.sessionId,
+                                    "life": playerSession.turret.life
+                                    }]);
+                }
             }
         }
     }
