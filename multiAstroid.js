@@ -388,8 +388,8 @@ PlayerSession.prototype = {
 	var pos = this.bsm.getMostThreateningObstacle(this.turret.sessionId);
         if (pos != null) { 
             var angle = Math.atan2(this.bsm.aheadY - pos[1], this.bsm.aheadX - pos[0]);
-            var avoidanceX = Math.cos(angle) * .9;
-            var avoidanceY = Math.sin(angle) * .9;
+            var avoidanceX = Math.cos(angle);
+            var avoidanceY = Math.sin(angle);
             this.bsm.currVx = this.bsm.currVx + avoidanceX;
             this.bsm.currVy = this.bsm.currVy + avoidanceY;
         }
