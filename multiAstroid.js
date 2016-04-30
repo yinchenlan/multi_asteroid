@@ -91,6 +91,7 @@ io.on("connection", function(socket) {
     socket.on("disconnect", function(data) {
         var sessionId = socket.id;
         var playerSession = PlayerSession.all[sessionId];
+        if (playerSession == null) return;
         playerSession.remove();
         //console.log("size : " + Object.keys(PlayerSession.all).length);
         console.log("Player Session " + sessionId + " removed");
@@ -392,6 +393,11 @@ PlayerSession.prototype = {
             var avoidanceY = Math.sin(angle);
             this.bsm.currVx = this.bsm.currVx + avoidanceX;
             this.bsm.currVy = this.bsm.currVy + avoidanceY;
+            var angle2 = Math.atan2(pos[1] - this.turret.y, pos[0] - this.turret.x); 
+            this.turret.angle = angle2;
+            this.mouseDown = 1;
+        } else {
+            this.mouseDown = 0;
         }
     }
 };
