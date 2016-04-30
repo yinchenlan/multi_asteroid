@@ -1,5 +1,5 @@
 var app = require('http').createServer(handler),
-    io = require('socket.io').listen(app),
+    io = require('socket.io').listen(app, { pingTimeout: 4000, pingInterval: 4000 }),
     fs = require('fs'),
     url = require('url'),
     util = require('util'),
@@ -89,6 +89,7 @@ io.on("connection", function(socket) {
     }
 
     socket.on("disconnect", function(data) {
+	    console.log("disconnect : " + data);
         var sessionId = socket.id;
         var playerSession = PlayerSession.all[sessionId];
         if (playerSession == null) return;
@@ -149,6 +150,7 @@ io.on("connection", function(socket) {
     });
     
     socket.on("nickName", function(data) {
+	    console.log("nickName ");
         var ps = PlayerSession.all[socket.id];
         ps.name = data["name"];
         console.log("nickName " + ps.name);
@@ -409,7 +411,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 10) {
+    if (Object.keys(PlayerSession.all).length < 2) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
@@ -442,9 +444,12 @@ var t = setInterval(function() {
     moveRocks();
     createAllBullets();
     moveBullets();
+    //console.log("length = " + commandQueue.length);
     addCommand(["turretMoves", {
 		"turretMoves": turretMoves}]);
+    //console.log("updateworld");
     io.sockets.emit("updateWorld", {"updateWorld" : commandQueue});
+    //console.log("updateworld");
     commandQueue = [];    
 }, 1000 / 30);
 
@@ -458,11 +463,12 @@ function Bullet(x, y, r, color, sessionId) {
     this.sessionId = sessionId;
     this.color = color;
     this.id = this.getId();
+    //console.log ("bullet id " + this.id);
     Bullet.all.push(this);
 }
 Bullet.all = [];
 
-Bullet.id = 0;
+//Bullet.id = 0;
 
 Bullet.prototype = {
     remove: function() {
@@ -689,20 +695,15 @@ function bulletCollideTurret(bullet) {
                 var damage = 20;
                 if (ps.turret.life - damage <= 0) {
                     var shooterSession = PlayerSession.all[bullet.sessionId];
-                    shooterSession.kills += 1;
-                    //io.sockets.emit("removePlayer", {
-                    //    "sessionId": ps.sessionId
-                    //});
-                    addCommand(["removePlayer", {
-                        "sessionId": ps.sessionId
-                    }]);
+                    if (shooterSession != null) {
+                        shooterSession.kills += 1;
+                        addCommand(["removePlayer", {
+                            "sessionId": ps.sessionId
+                        }]);
                     ps.remove();
+                    }
                 } else {
                     ps.turret.life = ps.turret.life - damage;
-                    //io.sockets.emit("damagePlayer", {
-                    //    "sessionId": ps.sessionId,
-                    //    "life": ps.turret.life
-                    //});
                     addCommand(["damagePlayer", {
                         "sessionId": ps.sessionId,
                         "life": ps.turret.life
@@ -770,6 +771,7 @@ function bulletCollideRock(bullet) {
             if (rock.r < 20) {
                 if (rock.color == "lightblue") {
                     var ps = PlayerSession.all[bullet.sessionId];
+                    if(ps == null) continue;
                     var turret = ps.turret;
                     turret.life = 100;
                 }
@@ -797,32 +799,37 @@ function moveBullets() {
         if (bullet == null) continue;
         bullet.x += bullet.vx;
         bullet.y += bullet.vy;
+        //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
         addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
+        //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);        
         bulletCollideRock(bullet);
         bulletCollideTurret(bullet);
         if (bullet.x <= 0 || bullet.y <= 0 ||
             bullet.x % MAX_X !== bullet.x ||
             bullet.y % MAX_Y !== bullet.y) {
             bullet.remove();
-        }
+	}
     }
 }
 
 function createBullets(sessionId) {
+    //console.log("bullet session id " + sessionId);
     var now = new Date();
     var ps = PlayerSession.all[sessionId];
     var turret = ps.turret;
     var color = turret.color;
+    if (ps == null) return;
+    if(turret == null) console.log("null turret");
     if (!ps.isNew() && ps.mouseDown == 1 && now - ps.mouseDate > 500) {
-        var x = turret.recoilX + turret.length * Math.cos(turret.angle);
+	var x = turret.recoilX + turret.length * Math.cos(turret.angle);
         var y = turret.recoilY + turret.length * Math.sin(turret.angle);
+        //console.log("x : " + x + ", y : " + y + ", color : " + color + ", sessionId : " + sessionId);
         var bullet = new Bullet(x, y, 4, color, sessionId);
         var speed = 16;
         bullet.vx = speed * Math.cos(turret.angle);
         bullet.vy = speed * Math.sin(turret.angle);
         turret.recoil = 5;
         ps.mouseDate = now;
-        //io.sockets.emit("createBullet", bullet.serialize());
         addCommand(["createBullet", bullet.serialize()]);
     }
 }
