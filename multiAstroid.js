@@ -239,9 +239,55 @@ function BSM () {
     this.destY = Math.round(Math.random() * MAX_Y);
     this.currVx = 0;
     this.currVy = 0;
+    this.aheadX = 0;
+    this.aheadY = 0;
+    this.shortAheadX = 0;
+    this.shortAheadY = 0;
     this.lastTicked = new Date();
     this.tickFreq = 2000;
+    this.aheadDist = 100;
 }
+
+BSM.prototype = {
+    getMostThreateningObstacle: function() {
+        var x = 0;
+        var y = 0;
+        var currMin = 1000000;
+        for (var idx in Rock.all) {
+	    var rock = Rock.all[idx];
+            var dist = this.getDistance(rock.x, rock.y, this.shortAheadX, this.shortAheadY); 
+            //console.log("dist : " + dist + ", radius : " + rock.r);
+            if(dist <= rock.r * 1.2 && dist < currMin) {
+                currMin = dist;
+                x = rock.x; 
+                y = rock.y;
+                //console.log("dist : " + dist + ", radius : " + rock.r);
+                //continue;
+            }
+            dist = this.getDistance(rock.x, rock.y, this.aheadX, this.aheadY);
+            if(dist <= rock.r * 1.2 && dist < currMin) {
+                currMin = dist;
+                x = rock.x;
+                y = rock.y;
+                //console.log("dist : " + dist + ", radius : " + rock.r);
+            }    
+        }
+        if (currMin < 10000) 
+            return [x, y];
+        else return null;   	
+    },
+    getDistance: function(x1, y1, x2, y2) {
+        return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));        
+    },
+    calculateAheadVector: function(x, y) {
+        var angle = Math.atan2(this.currVy, this.currVx);
+        this.aheadX = x + Math.cos(angle) * this.aheadDist;
+        this.aheadY = y + Math.sin(angle) * this.aheadDist;
+        //console.log("aheadX " + this.aheadX + ", aheadY " + this.aheadY);
+        this.shortAheadX = x + Math.cos(angle) * 10;
+        this.shortAheadY = y + Math.sin(angle) * 10;
+    } 
+};
 
 function PlayerSession(sessionId, turret, isBot) {
     this.sessionId = sessionId;
@@ -281,7 +327,21 @@ PlayerSession.prototype = {
         }
     },
     tick: function() {
-        //console.log("tick");
+        this.wander();
+        this.avoid();
+        var angle = Math.atan2(this.bsm.currVy, this.bsm.currVx);        
+        this.turret.x = this.turret.x + this.turret.speed * Math.cos(angle);
+        this.turret.y = this.turret.y + this.turret.speed * Math.sin(angle);	
+        var recoilAngle = this.turret.angle + Math.PI;
+        this.turret.recoilX = Math.round(this.turret.x + this.turret.recoil * Math.cos(recoilAngle));
+        this.turret.recoilY = Math.round(this.turret.y + this.turret.recoil * Math.sin(recoilAngle));
+        if (this.turret.recoil > 0) {
+            this.turret.recoil -= 1;
+        }
+        this.turret.mousePosX = this.bsm.destX;
+        this.turret.mousePosY = this.bsm.destY;
+    },
+    wander: function() {
         var now = new Date();
 	if (now - this.bsm.lastTicked > this.bsm.tickFreq) {
 	    this.bsm.destX = Math.round(Math.random() * MAX_X);
@@ -291,28 +351,22 @@ PlayerSession.prototype = {
         var angle = Math.atan2(this.bsm.destY - this.turret.y, this.bsm.destX - this.turret.x);
         var destVx = Math.cos(angle);
         var destVy = Math.sin(angle);
-        var dVx = (destVx - this.bsm.currVx) * .1;
-        var dVy = (destVy - this.bsm.currVy) * .1;
-        //var nAngle = Math.atan2(dVx, dVy);
-        this.bsm.currVx = this.bsm.currVx + /*Math.cos(nAngle)*/ dVx;
-        this.bsm.currVy = this.bsm.currVy + /*Math.sin(nAngle)*/ dVy;
-        //nAngle = Math.atan2(this.bsm.currVx, this.bsm.currVy);
-        //this.bsm.currVx = Math.cos(nAngle);
-        //this.bsm.currVy = Math.sin(nAngle);
-        this.turret.x = this.turret.x + this.turret.speed * this.bsm.currVx;
-        this.turret.y = this.turret.y + this.turret.speed * this.bsm.currVy;
+        var dVx = (destVx - this.bsm.currVx) * .05;
+        var dVy = (destVy - this.bsm.currVy) * .05;
+        this.bsm.currVx = this.bsm.currVx + dVx;
+        this.bsm.currVy = this.bsm.currVy + dVy;
         this.turret.angle = angle;
-        var recoilAngle = angle + Math.PI;
-        this.turret.recoilX = Math.round(this.turret.x + this.turret.recoil * Math.cos(recoilAngle));
-        this.turret.recoilY = Math.round(this.turret.y + this.turret.recoil * Math.sin(recoilAngle));
-        if (this.turret.recoil > 0) {
-            this.turret.recoil -= 1;
-        }
-        this.turret.mousePosX = this.bsm.destX;
-        this.turret.mousePosY = this.bsm.destY;
     },
-    attack: function() {
-        
+    avoid: function() {
+        this.bsm.calculateAheadVector(this.turret.x, this.turret.y);
+	var pos = this.bsm.getMostThreateningObstacle();
+        if (pos != null) { 
+            var angle = Math.atan2(this.bsm.aheadY - pos[1], this.bsm.aheadX - pos[0]);
+            var avoidanceX = Math.cos(angle) * .5;
+            var avoidanceY = Math.sin(angle) * .5;
+            this.bsm.currVx = this.bsm.currVx + avoidanceX;
+            this.bsm.currVy = this.bsm.currVy + avoidanceY;
+        }
     }
 };
 
