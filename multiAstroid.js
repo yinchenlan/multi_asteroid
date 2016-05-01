@@ -768,14 +768,12 @@ function bulletCollideRock(bullet) {
         var rock = Rock.all[idx];
         if (distance(rock.x, rock.y, bullet.x, bullet.y) <= (bullet.r + rock.r)) {
             bullet.remove();
+            var ps = PlayerSession.all[bullet.sessionId];
+	    if(ps == null) continue;
+	    var turret = ps.turret;
+            turret.life = Math.min(100, turret.life + 10);
             if (rock.r < 20) {
-                if (rock.color == "lightblue") {
-                    var ps = PlayerSession.all[bullet.sessionId];
-                    if(ps == null) continue;
-                    var turret = ps.turret;
-                    turret.life = 100;
-                }
-                rock.remove();
+                 rock.remove();
                 //score += 1;
             } else {
                 rock.r = rock.r - 5;
