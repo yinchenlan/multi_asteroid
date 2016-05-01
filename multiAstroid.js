@@ -141,11 +141,13 @@ io.on("connection", function(socket) {
 
     socket.on("mouseDown", function(data) {
         var ps = PlayerSession.all[socket.id];
+        if (ps == null) return;
         ps.mouseDown = 1;
     });
 
     socket.on("mouseUp", function(data) {
         var ps = PlayerSession.all[socket.id];
+        if (ps == null) return;
         ps.mouseDown = 0;
     });
     
@@ -693,10 +695,10 @@ function bulletCollideTurret(bullet) {
             }
             if (distance(ps.turret.x, ps.turret.y, bullet.x, bullet.y) <= (bullet.r + 5)) {
                 var damage = 20;
+                var shooterSession = PlayerSession.all[bullet.sessionId];
+                shooterSession.kills += 1;
                 if (ps.turret.life - damage <= 0) {
-                    var shooterSession = PlayerSession.all[bullet.sessionId];
                     if (shooterSession != null) {
-                        shooterSession.kills += 1;
                         addCommand(["removePlayer", {
                             "sessionId": ps.sessionId
                         }]);

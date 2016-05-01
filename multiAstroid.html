@@ -19,9 +19,6 @@
                 <input type="submit" value="Start" onclick="socket = connect(); updateSocket(); setNickName(); hideForm(); return false;">
                 </form> 
             </td>
-            <td>
-                <canvas id="leaderCanvas" width="400" height="300"></canvas>
-            </td>
         </tr>
     </table>
     <script>
@@ -145,8 +142,8 @@
                 var turret = new Turret(data["x"], data["y"], data["color"]);
                 turret.life = data["life"];
                 sessionId = data["sessionId"];
-                //alert("Creating player session " + sessionId);
                 var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
+                //alert("Creating player session " + sessionId);
                 setNickNameToPlayerSession();
             });
 
@@ -183,7 +180,7 @@
             var ps = PlayerSession.all[data];
             if (ps != null) {
                 if (data == sessionId) {
-                    socket.disconnect();
+                    //socket.disconnect();
                     gameOver = 1;
                     unhideForm();
                 }
@@ -359,6 +356,7 @@
                 "sessionId": sessionId,
                 "name": nickName
             });
+            //alert("nickname sent " + nickName); 
         }
 
         window.addEventListener('keydown', function(event) {
@@ -534,7 +532,7 @@
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .5;
                 ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
-                ctx.fillText("kills: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
+                ctx.fillText("score: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
                 ctx.restore();
             }
         }
@@ -782,7 +780,9 @@
         };
 
         Bullet.moveBullet = function(data) {
+            //debug("bullet : " + data);
             var bullet = Bullet.all[data["id"]];
+            //debug("bullet : " + bullet);
             bullet.x = data["x"];
             bullet.y = data["y"];
         };
@@ -932,16 +932,16 @@
         function drawWorld() {
               requestAnimationFrame(drawWorld);
               removeStuff();  
-              if (gameOver == 1) {
-                 PlayerSession.all = {};
-		 Rock.all = {};
-                 Bullet.all = {};
-                 deletePlayerSessionSet = new Set();
-                 deleteRockSet = new Set();
-                 deleteBulletSet = new Set();
-	         drawGameOver();
-              }
-              else {
+              //if (gameOver == 1) {
+                 //PlayerSession.all = {};
+		 //Rock.all = {};
+                 //Bullet.all = {};
+                 //deletePlayerSessionSet = new Set();
+                 //deleteRockSet = new Set();
+                 //deleteBulletSet = new Set();
+	         //drawGameOver();
+             // }
+              //else {
               // Clear display                
               ctx.save();
               ctx.fillStyle = "rgba(0, 0, 0, .2)";
@@ -961,7 +961,7 @@
               drawHelp();
               drawLocation();
               //drawNumPlayers();
-            }
+            //}
         }
         drawWorld();
     </script>
