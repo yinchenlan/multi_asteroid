@@ -411,7 +411,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 6) {
+    if (Object.keys(PlayerSession.all).length < 3) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
