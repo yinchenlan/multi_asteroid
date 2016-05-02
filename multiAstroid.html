@@ -1,9 +1,7 @@
-<!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <!--<meta name="viewport" content="width=device-width, user-scalable=no">-->
     <title>Asteroid-Like Game</title>
 </head>
 <script src="/socket.io/socket.io.js"></script>
@@ -107,7 +105,6 @@
         var deletePlayerSessionSet = new Set();
         var MAX_X = 1600;
         var MAX_Y = 1200;
-        
         function strcmp(a, b) {
             if (a.toString() < b.toString()) return -1;
             if (a.toString() > b.toString()) return 1;
@@ -134,7 +131,7 @@
 
         function connect() {
             gameOver = 0;
-            return io.connect(window.location.hostname/* + ":8125"*/);
+            return io.connect(location.hostname/* + ":8125"*/);
         }
 
         function updateSocket() {
@@ -175,18 +172,18 @@
         }
 
         function removePlayer(data) {
-            //debug("removePlayer");
+            //alert("removePlayer");
 	    //deletePlayerSessionSet.add(data["sessionId"]);
-            var ps = PlayerSession.all[data];
+            var ps = PlayerSession.all[data["sessionId"]];
             if (ps != null) {
-                if (data == sessionId) {
+                if (data["sessionId"] == sessionId) {
                     //socket.disconnect();
                     gameOver = 1;
                     unhideForm();
                 }
                 //alert("removing session " + sessionId);
                 ps.remove();
-            deletePlayerSessionSet.delete(data);
+            //deletePlayerSessionSet.delete(data);
             }
         };
 
@@ -214,15 +211,16 @@
             var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
             bullet.vx = data["vx"];
             bullet.vy = data["vy"];
-            laser.play();
+            //laser.play();
 
         };
 
         function removeBullet(data) {
-            //debug("removeBullet");
-            if (Bullet.all[data] != null) {
-                delete Bullet.all[data];
-                deleteBulletSet.delete(data);
+            //alert("removeBullet " + data["id"]);
+            if (Bullet.all[data["id"]] != null) {
+                //alert("remove bullet "  + data["id"]);
+                delete Bullet.all[data["id"]];
+                //deleteBulletSet.delete(data);
             }
         };
 
@@ -230,7 +228,7 @@
             //debug("removeRock");
             if(Rock.all[data] != null) {
                 delete Rock.all[data];
-                deleteRockSet.delete(data);
+                //deleteRockSet.delete(data);
             }
         };
 
@@ -284,17 +282,17 @@
         }
 
         function removeStuff() {
-            for (let item of deletePlayerSessionSet) removePlayer(item);
-            for (let item of deleteRockSet) removeRock(item);
-	    for (let item of deleteBulletSet) removeBullet(item);
+            //deletePlayerSessionSet.forEach(function(val) {removePlayer(val);});
+            //deleteRockSet.forEach(function(val) {removeRock(val);});
+            //deleteBulletSet.forEach(function(va) {removeBullet(val);});
         }
 
         function executeCommand(command) {
             //debug("command : " + command[0]);
             switch (command[0]) {
                 case "removePlayer":
-                    deletePlayerSessionSet.add(command[1]["sessionId"]);
-                    //removePlayer(command[1]);
+                    //deletePlayerSessionSet.add(command[1]["sessionId"]);
+                    removePlayer(command[1]);
                     break;
                 case "damagePlayer":
                     damagePlayer(command[1]);
@@ -309,12 +307,12 @@
                     createBullet(command[1]);
                     break;
                 case "removeBullet":
-                    deleteBulletSet.add(command[1]["id"]);
-                    //removeBullet(command[1]);
+                    //deleteBulletSet.add(command[1]["id"]);
+                    removeBullet(command[1]);
                     break;
                 case "removeRock":
-                    deleteRockSet.add(command[1]["id"]);
-                    //removeRock(command[1]);
+                    //deleteRockSet.add(command[1]["id"]);
+                    removeRock(command[1]);
                     break;
                 case "turretMoves":
                     turretMoves(command[1]);
@@ -721,6 +719,7 @@
         PlayerSession.all = {};
         PlayerSession.prototype = {
             remove: function() {
+                //delete PlayerSession.all[this.sessionId];
                 delete PlayerSession.all[this.sessionId];
             },
             getTimeLeft: function() {
@@ -775,6 +774,7 @@
                 ctx.restore();
             },
             remove: function() {
+                //alert("bullet " + Bullet.all[this.id]);
                 delete Bullet.all[this.id];
             }
         };
