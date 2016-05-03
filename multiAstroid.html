@@ -227,7 +227,7 @@
         function removeRock(data) {
             //debug("removeRock");
             if(Rock.all[data] != null) {
-                delete Rock.all[data];
+                delete Rock.all[data["id"]];
                 //deleteRockSet.delete(data);
             }
         };
