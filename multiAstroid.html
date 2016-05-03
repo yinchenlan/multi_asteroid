@@ -100,9 +100,9 @@
         var transparency = 0.1;
         var starsPositions = [];
         var nickName = "";
-        var deleteRockSet = new Set();
-        var deleteBulletSet = new Set();
-        var deletePlayerSessionSet = new Set();
+        var deleteRockSet = {};
+        var deleteBulletSet = {};
+        var deletePlayerSessionSet = {};
         var MAX_X = 1600;
         var MAX_Y = 1200;
         function strcmp(a, b) {
@@ -172,18 +172,18 @@
         }
 
         function removePlayer(data) {
-            //alert("removePlayer");
-	    //deletePlayerSessionSet.add(data["sessionId"]);
-            var ps = PlayerSession.all[data["sessionId"]];
+            //alert("removePlayer before");
+            var ps = PlayerSession.all[data];
+            //if (ps == null) alert("null ps");
             if (ps != null) {
-                if (data["sessionId"] == sessionId) {
+                ps.remove();
+                if (data == sessionId) {
                     //socket.disconnect();
                     gameOver = 1;
                     unhideForm();
                 }
+                
                 //alert("removing session " + sessionId);
-                ps.remove();
-            //deletePlayerSessionSet.delete(data);
             }
         };
 
@@ -217,18 +217,16 @@
 
         function removeBullet(data) {
             //alert("removeBullet " + data["id"]);
-            if (Bullet.all[data["id"]] != null) {
-                //alert("remove bullet "  + data["id"]);
-                delete Bullet.all[data["id"]];
-                //deleteBulletSet.delete(data);
+            if (Bullet.all[data] != null) {
+                //alert("remove bullet "  + data);
+                delete Bullet.all[data];
             }
         };
 
         function removeRock(data) {
-            //debug("removeRock");
+            //alert("removeRock " + data["id"]);
             if(Rock.all[data] != null) {
-                delete Rock.all[data["id"]];
-                //deleteRockSet.delete(data);
+                delete Rock.all[data];
             }
         };
 
@@ -282,17 +280,27 @@
         }
 
         function removeStuff() {
-            //deletePlayerSessionSet.forEach(function(val) {removePlayer(val);});
-            //deleteRockSet.forEach(function(val) {removeRock(val);});
-            //deleteBulletSet.forEach(function(va) {removeBullet(val);});
+            for (var key in deletePlayerSessionSet) {
+                removePlayer(key);
+                delete deletePlayerSessionSet[key];
+              }
+            for (var key in deleteRockSet) {
+                removeRock(key);
+                delete deleteRockSet[key];
+              }
+            for (var key in deleteBulletSet) {
+                removeBullet(key); 
+                delete deleteBulletSet[key];
+              }
         }
 
         function executeCommand(command) {
+            //if (command[0] == "removePlayer") alert ("remove " + command[1]["sessionId"]);
             //debug("command : " + command[0]);
             switch (command[0]) {
                 case "removePlayer":
-                    //deletePlayerSessionSet.add(command[1]["sessionId"]);
-                    removePlayer(command[1]);
+                    deletePlayerSessionSet[command[1]["sessionId"]] = 1;
+                    //removePlayer(command[1]);
                     break;
                 case "damagePlayer":
                     damagePlayer(command[1]);
@@ -307,12 +315,12 @@
                     createBullet(command[1]);
                     break;
                 case "removeBullet":
-                    //deleteBulletSet.add(command[1]["id"]);
-                    removeBullet(command[1]);
+                    deleteBulletSet[command[1]["id"]] = 1;
+                    //removeBullet(command[1]);
                     break;
                 case "removeRock":
-                    //deleteRockSet.add(command[1]);
-                    removeRock(command[1]);
+                    deleteRockSet[command[1]["id"]] = 1;
+                    //removeRock(command[1]);
                     break;
                 case "turretMoves":
                     turretMoves(command[1]);
@@ -721,6 +729,7 @@
             remove: function() {
                 //delete PlayerSession.all[this.sessionId];
                 delete PlayerSession.all[this.sessionId];
+
             },
             getTimeLeft: function() {
                 var t = Math.round(((this.date.getTime() + this.timeLeft - new Date().getTime())) / 1000);
