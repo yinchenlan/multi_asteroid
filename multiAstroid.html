@@ -135,7 +135,7 @@
         function connect() {
             gameOver = 0;
             return io.connect(location.hostname/* + ":8125"*/, 
-            {transports: ['websocket']);
+            {transports: ['websocket']});
         }
 
         function updateSocket() {
