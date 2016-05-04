@@ -97,7 +97,7 @@
         var scores = [];
         var socket = null;
         var sessionId = null;
-        var transparency = 0.1;
+        var transparency = 0.4;
         var starsPositions = [];
         var nickName = "";
         var deleteRockSet = {};
@@ -105,6 +105,9 @@
         var deletePlayerSessionSet = {};
         var MAX_X = 1600;
         var MAX_Y = 1200;
+        var starsCanvas = null;
+        var starsCtx = null;
+
         function strcmp(a, b) {
             if (a.toString() < b.toString()) return -1;
             if (a.toString() > b.toString()) return 1;
@@ -146,6 +149,32 @@
 
             socket.on("stars", function(data) {
                 starsPositions = data["stars"];
+                starsCanvas = document.createElement("canvas");
+                starsCanvas.width = MAX_X;
+                starsCanvas.height = MAX_Y;
+                starsCtx = starsCanvas.getContext("2d");
+                starsCtx.save();
+                starsCtx.fillStyle = "black";
+                starsCtx.fillRect(0, 0, starsCanvas.width, starsCanvas.height);
+                starsCtx.restore();
+                for (var i in starsPositions) {
+                    //alert("i " + i);
+                    var pos = starsPositions[i];
+                    var x = pos[0];
+                    var y = pos[1];
+                    //alert("x " + x + ", y " + y);
+                    starsCtx.save();
+                    starsCtx.translate(x, y);
+                    starsCtx.fillStyle = "yellow";
+                    starsCtx.strokeStyle = "yellow";
+                    starsCtx.beginPath();
+                    starsCtx.arc(0, 0, 1, 0, Math.PI * 2, true);
+                    starsCtx.closePath();
+                    starsCtx.fill();
+                    starsCtx.stroke();
+                    starsCtx.restore();
+                }
+
             });
 
             socket.on("createRock", function(data) {
@@ -461,6 +490,7 @@
             ctx.strokeStyle = "black";
             if (!isYou)
                 ctx.globalAlpha = transparency;
+            else ctx.globalAlpha = 1;
             ctx.beginPath();
             var endAngle = Math.PI * 2;
             ctx.arc(0, 0, turret.baseRadius * turret.life / 100, 0, endAngle, true);
@@ -475,6 +505,7 @@
             ctx.strokeStyle = "black";
             if (!isYou)
                 ctx.globalAlpha = transparency;
+            else ctx.globalAlpha = 1;
             ctx.beginPath();
             ctx.arc(0, 0, turret.baseRadius / 2, 0, endAngle, true);
             ctx.closePath();
@@ -522,7 +553,7 @@
                 ctx.save();
                 ctx.font = "8pt Courier New";
                 ctx.fillStyle = "white";
-                ctx.globalAlpha = .2;
+                ctx.globalAlpha = .5;
                 ctx.fillText(ps.getTimeLeft(), getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
                 ctx.restore();
                 ctx.save();
@@ -536,7 +567,7 @@
                 ctx.save();
                 ctx.font = "8pt Courier New";
                 ctx.fillStyle = "white";
-                ctx.globalAlpha = .5;
+                ctx.globalAlpha = .8;
                 ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
                 ctx.fillText("score: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
                 ctx.restore();
@@ -662,7 +693,7 @@
                     bullet.remove();
                     if (rock.r < 20) {
                         rock.remove();
-                        score += 1;
+                        //score += 1;
                     } else {
                         rock.r = rock.r - 5;
                         rock.resize();
@@ -919,23 +950,12 @@
             ctx.restore();
         }
 
+
         function drawStars() {
-            for (var i in starsPositions) {
-                var pos = starsPositions[i];
-                var x = pos[0];
-                var y = pos[1];
-                //alert("x " + x + ", y " + y);
-                ctx.save();
-                ctx.translate(getXOffset() + x, getYOffset() + y);
-                ctx.fillStyle = "yellow";
-                ctx.strokeStyle = "yellow";
-                ctx.beginPath();
-                ctx.arc(0, 0, 1, 0, Math.PI * 2, true);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                ctx.restore();
-            }
+            ctx.save();
+            ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
+            ctx.restore();
+            //alert("draw stars");
         }
 
         function drawWorld() {
@@ -953,13 +973,13 @@
               //else {
               // Clear display                
               ctx.save();
-              ctx.fillStyle = "rgba(0, 0, 0, .2)";
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              //ctx.fillStyle = "rgba(0, 0, 0, .2)";
+              //ctx.fillRect(0, 0, canvas.width, canvas.height);
+              drawStars();
               ctx.lineWidth = 2;
               ctx.strokeStyle = "#6495ED";
               ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
               ctx.restore();
-              drawStars();
               // Draw turret
               drawTurrets();
               //moveBullets();

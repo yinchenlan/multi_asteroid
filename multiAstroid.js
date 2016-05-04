@@ -780,7 +780,8 @@ function bulletCollideRock(bullet) {
             var ps = PlayerSession.all[bullet.sessionId];
 	    if(ps == null) continue;
 	    var turret = ps.turret;
-            turret.life = Math.min(100, turret.life + 10);
+            if (rock.color == "lightblue")
+                turret.life = Math.min(100, turret.life + 10);
             if (rock.r < 20) {
                  rock.remove();
                 //score += 1;
