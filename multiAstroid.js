@@ -1,5 +1,5 @@
 var app = require('http').createServer(handler),
-    io = require('socket.io').listen(app, { pingTimeout: 4000, pingInterval: 4000 }),
+    io = require('socket.io').listen(app, { pingTimeout: 4000, pingInterval: 1000 }),
     fs = require('fs'),
     url = require('url'),
     util = require('util'),
@@ -415,7 +415,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 10) {
+    if (Object.keys(PlayerSession.all).length < 3) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
