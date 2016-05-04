@@ -415,7 +415,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 3) {
+    if (Object.keys(PlayerSession.all).length < 30) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
@@ -455,7 +455,7 @@ var t = setInterval(function() {
     io.sockets.emit("updateWorld", {"updateWorld" : commandQueue});
     //console.log("updateworld");
     commandQueue = [];    
-}, 1000 / 30);
+}, 1000 / 20);
 
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
