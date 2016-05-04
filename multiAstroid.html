@@ -6,14 +6,14 @@
 </head>
 <script src="/socket.io/socket.io.js"></script>
 
-<body bgcolor="black">
+<body style="background-color:lightgrey;">
     <table>
         <tr>
             <td>
                 <canvas id="gameCanvas" width="800" height="600"></canvas>
                 <audio id="laser" src="laser.wav" style="display: none;"></audio>
                 <form name = "nameForm" action="#"> 
-                <font color="white">Enter Name: </font><input type="text" name="nickName">
+                <font color="blue">Enter Name: </font><input type="text" name="nickName">
                 <input type="submit" value="Start" onclick="socket = connect(); updateSocket(); setNickName(); hideForm(); return false;">
                 </form> 
             </td>
@@ -364,6 +364,7 @@
         }
 
         var canvas = document.getElementById("gameCanvas");
+        canvas.style.backgroundColor = 'black';
         var ctx = canvas.getContext('2d');
 
         function resetGame() {
@@ -954,17 +955,31 @@
         function drawStars() {
             if (starsCanvas == null) return;
             ctx.save();
-            ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
+            if(starsPositions.length > 0) 
+                ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
+            else 
+                ctx.drawImage(starsCanvas, 0, 0, gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
             ctx.restore();
             //alert("draw stars");
         }
 
+        {
+            starsCanvas = document.createElement("canvas");
+            starsCanvas.width = MAX_X;
+            starsCanvas.height = MAX_Y;
+            starsCtx = starsCanvas.getContext("2d");
+            starsCtx.save();
+            starsCtx.fillStyle = "black";
+            starsCtx.fillRect(0, 0, starsCanvas.width, starsCanvas.height);
+            starsCtx.restore();
+        }
+
         function drawWorld() {
               requestAnimationFrame(drawWorld);
-              removeStuff();  
-              ctx.save();
+              removeStuff(); 
               drawStars();
-               ctx.lineWidth = 2;
+              ctx.save();
+              ctx.lineWidth = 2;
               ctx.strokeStyle = "#6495ED";
               ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
               ctx.restore();
@@ -977,8 +992,6 @@
               drawScores();
               drawHelp();
               drawLocation();
-              //drawNumPlayers();
-            //}
         }
         drawWorld();
     </script>

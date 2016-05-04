@@ -699,7 +699,8 @@ function bulletCollideTurret(bullet) {
             if (distance(ps.turret.x, ps.turret.y, bullet.x, bullet.y) <= (bullet.r + 5)) {
                 var damage = 20;
                 var shooterSession = PlayerSession.all[bullet.sessionId];
-                shooterSession.kills += 1;
+                if (shooterSession != null)
+                   shooterSession.kills += 1;
                 if (ps.turret.life - damage <= 0) {
                     if (ps != null) {
                         addCommand(["removePlayer", {
