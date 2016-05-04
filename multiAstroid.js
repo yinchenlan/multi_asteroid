@@ -753,6 +753,7 @@ function turretCollideTurret(turret) {
 				    }]);
                 }
                 var playerSession = PlayerSession.all[turret.sessionId];
+                if (playerSession == null) continue;
                 if (playerSession.turret.life - damage <= 0) {
                     ps.kills += 1;
                     addCommand(["removePlayer", {
