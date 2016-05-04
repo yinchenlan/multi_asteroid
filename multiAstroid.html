@@ -952,6 +952,7 @@
 
 
         function drawStars() {
+            if (starsCanvas == null) return;
             ctx.save();
             ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
             ctx.restore();
@@ -961,22 +962,9 @@
         function drawWorld() {
               requestAnimationFrame(drawWorld);
               removeStuff();  
-              //if (gameOver == 1) {
-                 //PlayerSession.all = {};
-		 //Rock.all = {};
-                 //Bullet.all = {};
-                 //deletePlayerSessionSet = new Set();
-                 //deleteRockSet = new Set();
-                 //deleteBulletSet = new Set();
-	         //drawGameOver();
-             // }
-              //else {
-              // Clear display                
               ctx.save();
-              //ctx.fillStyle = "rgba(0, 0, 0, .2)";
-              //ctx.fillRect(0, 0, canvas.width, canvas.height);
               drawStars();
-              ctx.lineWidth = 2;
+               ctx.lineWidth = 2;
               ctx.strokeStyle = "#6495ED";
               ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
               ctx.restore();
