@@ -470,7 +470,7 @@ function Bullet(x, y, r, color, sessionId) {
     //console.log ("bullet id " + this.id);
     Bullet.all[this.id] = this;
 }
-Bullet.all = [];
+Bullet.all = {};
 
 //Bullet.id = 0;
 
@@ -502,6 +502,26 @@ Bullet.prototype = {
     }
 };
 
+function PowerUp(xCoord, yCoord, healthBonus, bulletSpeedBonus, shipSpeedBonus) {
+    this.x = xCoord;
+    this.y = yCoord;
+    this.hb = healthBonus;
+    this.bsb = bulletSpeedBonus;
+    this.ssb = shipSpeedBonus;
+    this.id = generateUUID();
+}
+
+PowerUp.all = [];
+
+PowerUp.prototype = {
+    remove: function() {
+        delete PowerUp.all[this.id];
+    },
+    move: function() {
+       
+    }
+};
+
 // Constructor
 function Rock(x, y, r) {
     this.color = "white";
@@ -529,7 +549,7 @@ function Rock(x, y, r) {
     console.log("created rock " + this.id);
 }
 
-Rock.all = [];
+Rock.all = {};
 
 Rock.id = 0;
 
