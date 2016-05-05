@@ -6,7 +6,7 @@ var app = require('http').createServer(handler),
     scores = [],
     MAX_X = 1600,
     MAX_Y = 1200,
-    NUM_ROCKS = 10,
+    NUM_ROCKS = 40,
     NUM_STARS = 500,
     port = process.env.PORT || 8125,
     commandQueue = [],
@@ -102,7 +102,7 @@ io.on("connection", function(socket) {
         addCommand(["removePlayer", {
             "sessionId": sessionId
         }]);
-	console.log("remove player 1 " + sessionId);
+	//console.log("remove player 1 " + sessionId);
     });
 
     socket.on("moveStart", function(data) {
@@ -415,7 +415,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 10) {
+    if (Object.keys(PlayerSession.all).length < 15) {
 	createBOT();
     }
     for (var key in PlayerSession.all) {
@@ -678,7 +678,7 @@ function rockCollideTurret(rock, ps) {
             addCommand(["removePlayer", {
                 "sessionId": ps.sessionId
             }]);
-            console.log("remove player 2 " + ps.sessionId);
+            //console.log("remove player 2 " + ps.sessionId);
             ps.remove();
         } else {
             ps.turret.life = ps.turret.life - damage;
@@ -712,7 +712,7 @@ function bulletCollideTurret(bullet) {
                         addCommand(["removePlayer", {
                             "sessionId": ps.sessionId
                         }]);
-		    console.log("remove player 3 " + ps.sessionId);
+			//console.log("remove player 3 " + ps.sessionId);
                     ps.remove();
                     }
                 } else {
@@ -723,7 +723,7 @@ function bulletCollideTurret(bullet) {
                     }]);
                 }
                 bullet.remove();
-                console.log("remove player 3-");
+                //console.log("remove player 3-");
             }
         }
     }
@@ -745,11 +745,12 @@ function turretCollideTurret(turret) {
                 var damage = 20;
                 if (ps.turret.life - damage <= 0) {
                     var shooterSession = PlayerSession.all[turret.sessionId];
-                    shooterSession.kills += 1;
+                    if (shooterSession != null) 
+                        shooterSession.kills += 1;
                     addCommand(["removePlayer", {
 				"sessionId": ps.sessionId
 				    }]);
-                    console.log("remove player 4 " + ps.sessionId);
+                    //console.log("remove player 4 " + ps.sessionId);
                     ps.remove();
                 } else {
                     ps.turret.life = ps.turret.life - damage;
@@ -766,7 +767,7 @@ function turretCollideTurret(turret) {
                                 "sessionId": playerSession.sessionId
                                     }]);
                     playerSession.remove();
-                    console.log("remove player 5 " + playerSession.sessionId);
+                    //console.log("remove player 5 " + playerSession.sessionId);
                 } else {
                     playerSession.turret.life = playerSession.turret.life - damage;
                     addCommand(["damagePlayer", {
