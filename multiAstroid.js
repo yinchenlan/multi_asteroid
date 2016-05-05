@@ -468,7 +468,7 @@ function Bullet(x, y, r, color, sessionId) {
     this.color = color;
     this.id = this.getId();
     //console.log ("bullet id " + this.id);
-    Bullet.all.push(this);
+    Bullet.all[this.id] = this;
 }
 Bullet.all = [];
 
@@ -476,7 +476,8 @@ Bullet.all = [];
 
 Bullet.prototype = {
     remove: function() {
-        Bullet.all.splice(Bullet.all.indexOf(this), 1);
+        delete Bullet.all[this.id];
+        //Bullet.all.splice(Bullet.all.indexOf(this), 1);
         //io.sockets.emit("removeBullet", {
         //    "id": this.id
         //});
@@ -523,7 +524,9 @@ function Rock(x, y, r) {
         var coord = [rx, ry];
         this.coords.push(coord);
     }
-    Rock.all.push(this);
+    //Rock.all.push(this);
+    Rock.all[this.id] = this;
+    console.log("created rock " + this.id);
 }
 
 Rock.all = [];
@@ -532,7 +535,8 @@ Rock.id = 0;
 
 Rock.prototype = {
     remove: function() {
-        Rock.all.splice(Rock.all.indexOf(this), 1);
+        delete Rock.all[this.id];
+        //Rock.all.splice(Rock.all.indexOf(this), 1);
         //io.sockets.emit("removeRock", {
         //    "id": this.id
         //});
@@ -598,7 +602,7 @@ function createRocks() {
         rockDate = currDate;
     } else {
         if ((currDate - rockDate) > 200 &&
-            Rock.all.length < NUM_ROCKS + Math.floor( /*score = */ 20 / 20)) {
+            Object.keys(Rock.all).length < NUM_ROCKS + Math.floor( /*score = */ 20 / 20)) {
             var side = Math.floor(Math.random() * 4);
             var startx = 0,
                 starty = 0;
@@ -620,6 +624,7 @@ function createRocks() {
                     starty = (MAX_Y - 1) * Math.random();
                     break;
             }
+            console.log("creating rock");
             var rock = new Rock(startx, starty,
                 90 * Math.random() + 20);
             rock.color = rndColor();
@@ -638,25 +643,26 @@ function createRocks() {
 }
 
 function moveRocks() {
-    var i = Rock.all.length;
-    while (i--) {
-        var rock = Rock.all[i];
-        if (rock == null) continue;
-        rock.x += rock.vx;
-        rock.y += rock.vy;
-        addCommand(["updateRock", {"id" : rock.id, "x" : rock.x, "y" : rock.y}]);
-        for (var idx in PlayerSession.all) {
-            if (PlayerSession.all.hasOwnProperty(idx)) {
-                var ps = PlayerSession.all[idx];
-                if (ps.isNew()) {
-                    continue;
+    for (var k in Rock.all) {
+        if (Rock.all.hasOwnProperty(k)) {
+            var rock = Rock.all[k];
+            if (rock == null) continue;
+            rock.x += rock.vx;
+            rock.y += rock.vy;
+            addCommand(["updateRock", {"id" : rock.id, "x" : rock.x, "y" : rock.y}]);
+            for (var idx in PlayerSession.all) {
+                if (PlayerSession.all.hasOwnProperty(idx)) {
+                    var ps = PlayerSession.all[idx];
+                    if (ps.isNew()) {
+                        continue;
+                    }
+                    rockCollideTurret(rock, ps);
                 }
-                rockCollideTurret(rock, ps);
             }
-        }
-        if (rock.x <= 0 || rock.y <= 0 || rock.x % MAX_X !== rock.x ||
-            rock.y % MAX_Y !== rock.y) {
-            rock.remove();
+            if (rock.x <= 0 || rock.y <= 0 || rock.x % MAX_X !== rock.x ||
+                rock.y % MAX_Y !== rock.y) {
+                rock.remove();
+            }
         }
     }
 }
@@ -803,22 +809,23 @@ function distance(x1, y1, x2, y2) {
 }
 
 function moveBullets() {
-    var i = Bullet.all.length;
-    while (i--) {
-        var bullet = Bullet.all[i];
-        if (bullet == null) continue;
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
-        //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
-        addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
-        //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);        
-        bulletCollideRock(bullet);
-        bulletCollideTurret(bullet);
-        if (bullet.x <= 0 || bullet.y <= 0 ||
-            bullet.x % MAX_X !== bullet.x ||
-            bullet.y % MAX_Y !== bullet.y) {
-            bullet.remove();
-	}
+    for (var k in Bullet.all) {
+        if (Bullet.all.hasOwnProperty(k)) {
+            var bullet = Bullet.all[k];
+            if (bullet == null) continue;
+            bullet.x += bullet.vx;
+            bullet.y += bullet.vy;
+            //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
+            addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
+            //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);        
+            bulletCollideRock(bullet);
+            bulletCollideTurret(bullet);
+            if (bullet.x <= 0 || bullet.y <= 0 ||
+                bullet.x % MAX_X !== bullet.x ||
+                bullet.y % MAX_Y !== bullet.y) {
+                bullet.remove();
+	    }
+        }
     }
 }
 
