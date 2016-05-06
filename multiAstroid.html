@@ -234,7 +234,7 @@
             if (ps != null) {
                 ps.remove();
                 if (data == sessionId) {
-                    //socket.disconnect();
+                    socket.disconnect();
                     gameOver = 1;
                     Rock.all = {};
                     Bullet.all = {};
@@ -342,15 +342,16 @@
             for (var key in deletePlayerSessionSet) {
                 removePlayer(key);
                 delete deletePlayerSessionSet[key];
-              }
+            }
             for (var key in deleteRockSet) {
                 removeRock(key);
                 delete deleteRockSet[key];
-              }
+            }
             for (var key in deleteBulletSet) {
                 removeBullet(key); 
                 delete deleteBulletSet[key];
-              }
+            }
+            Bullet.removeDeadBullets();
         }
 
         function executeCommand(command) {
@@ -802,6 +803,8 @@
         };
         // Constructor
         function Bullet(x, y, r, color, sessionId, id) {
+            this.px = -1;
+            this.py = -1;
             this.x = x;
             this.y = y;
             this.r = r;
@@ -816,7 +819,6 @@
         }
         Bullet.all = {};
         Bullet.draw_all = function() {
-            var i = Bullet.all.length;
             for (var i in Bullet.all) {
                 if (Bullet.all.hasOwnProperty(i)) {
                     Bullet.all[i].draw();
@@ -856,8 +858,21 @@
             //debug("bullet : " + data);
             var bullet = Bullet.all[data["id"]];
             //debug("bullet : " + bullet);
+            bullet.px = bullet.x;
+            bullet.py = bullet.y;
             bullet.x = data["x"];
             bullet.y = data["y"];
+        };
+      
+        Bullet.removeDeadBullets = function() {
+            for (var i in Bullet.all) {
+                if (Bullet.all.hasOwnProperty(i)) {
+                    var bullet = Bullet.all[i];
+                    if (bullet.x == bullet.px && bullet.y == bullet.py)
+                        //alert("dead bullet " + bullet.id);
+                        delete Bullet.all[i];
+                }
+            }  
         };
 
         function Coord(x, y) {
