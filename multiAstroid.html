@@ -3,6 +3,16 @@
     <meta charset="utf-8">
     <!--<meta name="viewport" content="width=device-width, user-scalable=no">-->
     <title>Asteroid-Like Game</title>
+    <style>
+      html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+      border: 0;
+      overflow: hidden; /*  Disable scrollbars */
+      display: block;  /* No floating content on sides */
+      }
+    </style>
 </head>
 <script src="/socket.io/socket.io.js"></script>
 
@@ -10,7 +20,7 @@
     <table>
         <tr>
             <td>
-                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                <canvas id="gameCanvas"></canvas>
                 <audio id="laser" src="laser.wav" style="display: none;"></audio>
                 <form name = "nameForm" action="#"> 
                 <font color="blue">Enter Name: </font><input type="text" name="nickName">
@@ -29,6 +39,22 @@
                 "log": msg
             });
         }
+
+        function initialize() {
+	    // Register an event listener to
+	    // call the resizeCanvas() function each time 
+	    // the window is resized.
+	    window.addEventListener('resize', resizeCanvas, false);
+	
+	    // Draw canvas border for the first time.
+	    resizeCanvas();
+            //alert("resized");
+	}
+
+        function resizeCanvas() {
+	    canvas.width = window.innerWidth - 10;
+	    canvas.height = window.innerHeight - 30;
+	}
         
         function setNickName() {
             nickName = document.nameForm.nickName.value;
@@ -44,22 +70,22 @@
 
         function getXOffset() {
             var negX = -1 * PlayerSession.all[sessionId].turret.x;
-            var offset = negX + MAX_X/4;
-	    if (PlayerSession.all[sessionId].turret.x < MAX_X/4) {
+            var offset = negX + canvas.width/2;
+	    if (PlayerSession.all[sessionId].turret.x < canvas.width/2) {
 	        return 0;
-            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - MAX_X/4) {
-	        return -MAX_X/2;
+            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - canvas.width/2) {
+	        return -(MAX_X - canvas.width);
 	    }
             return offset;
         }
 
         function getYOffset() {
             var negY = -1 * PlayerSession.all[sessionId].turret.y;
-            var offset = negY + MAX_Y/4;
-            if (PlayerSession.all[sessionId].turret.y < MAX_Y/4) {
+            var offset = negY + gameCanvas.height/2;
+            if (PlayerSession.all[sessionId].turret.y < canvas.height/2) {
 		return 0;       
-            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - MAX_Y/4) {
-	  return -MAX_Y/2;
+            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - canvas.height/2) {
+	    return -(MAX_Y - canvas.height);
             }
             return offset;
         }
@@ -103,8 +129,8 @@
         var deleteRockSet = {};
         var deleteBulletSet = {};
         var deletePlayerSessionSet = {};
-        var MAX_X = 1600;
-        var MAX_Y = 1200;
+        var MAX_X = 3200;
+        var MAX_Y = 2400;
         var starsCanvas = null;
         var starsCtx = null;
 
@@ -368,6 +394,8 @@
         canvas.style.backgroundColor = 'black';
         var ctx = canvas.getContext('2d');
 
+        initialize();
+
         function resetGame() {
             var ps = PlayerSession.all[sessionId];
             ps.remove();
@@ -608,7 +636,7 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "greenyellow";
-            ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", 200, 25);
+            ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", canvas.width/2 - 200, 25);
             ctx.restore();
         }
 
@@ -641,7 +669,7 @@
             ctx.save();
             ctx.font = "8pt Calibri";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("Leader Board : ", 680, 50);
+            ctx.fillText("Leader Board : ", canvas.width - 120, 50);
             ctx.restore();
             ctx.save();
             ctx.font = "8pt Calibri";
@@ -651,7 +679,7 @@
             for (var idx in scores) {
                 if (idx > 9) break;
                 var sc = scores[idx];
-                ctx.fillText("" + sc.name + " : " + sc.kills, 680, 50 + inc);
+                ctx.fillText("" + sc.name + " : " + sc.kills, canvas.width - 120, 50 + inc);
                 inc += 20;
             }
             ctx.restore();
@@ -984,11 +1012,8 @@
               ctx.strokeStyle = "#6495ED";
               ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
               ctx.restore();
-              // Draw turret
               drawTurrets();
-              //moveBullets();
               Bullet.draw_all();
-              // Draw rocks
               Rock.draw_all();
               drawScores();
               drawHelp();

@@ -4,10 +4,10 @@ var app = require('http').createServer(handler),
     url = require('url'),
     util = require('util'),
     scores = [],
-    MAX_X = 1600,
-    MAX_Y = 1200,
-    NUM_ROCKS = 20,
-    NUM_STARS = 500,
+    MAX_X = 3200,
+    MAX_Y = 2400,
+    NUM_ROCKS = 40,
+    NUM_STARS = 1000,
     port = process.env.PORT || 8125,
     commandQueue = [],
     starPositions=[],
@@ -546,7 +546,7 @@ function Rock(x, y, r) {
     }
     //Rock.all.push(this);
     Rock.all[this.id] = this;
-    console.log("created rock " + this.id);
+    //console.log("created rock " + this.id);
 }
 
 Rock.all = {};
@@ -644,7 +644,7 @@ function createRocks() {
                     starty = (MAX_Y - 1) * Math.random();
                     break;
             }
-            console.log("creating rock");
+            //console.log("creating rock");
             var rock = new Rock(startx, starty,
                 90 * Math.random() + 20);
             rock.color = rndColor();
