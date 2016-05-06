@@ -236,6 +236,9 @@
                 if (data == sessionId) {
                     //socket.disconnect();
                     gameOver = 1;
+                    Rock.all = {};
+                    Bullet.all = {};
+                    PlayerSession.all = {};
                     unhideForm();
                 }
                 
