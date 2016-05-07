@@ -466,6 +466,11 @@
             }
             //if (event.preventDefault) { event.preventDefault(); }
             //if (event.stopPropagation) { event.stopPropagation(); }
+            //Locally move the turret
+            //alert("sessionId " + sessionId);
+            var ps = PlayerSession.all[sessionId];
+            ps.turret.hor = hor;
+            ps.turret.ver = ver;
             socket.emit("moveStart", {
                 "sessionId": sessionId,
                 "hor": hor,
