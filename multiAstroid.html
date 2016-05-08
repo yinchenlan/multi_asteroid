@@ -339,6 +339,10 @@
         }
 
         function removeStuff() {
+            for (var key in deleteBulletSet) {
+                removeBullet(key);
+                delete deleteBulletSet[key];
+            }
             for (var key in deletePlayerSessionSet) {
                 removePlayer(key);
                 delete deletePlayerSessionSet[key];
@@ -347,11 +351,6 @@
                 removeRock(key);
                 delete deleteRockSet[key];
             }
-            for (var key in deleteBulletSet) {
-                removeBullet(key); 
-                delete deleteBulletSet[key];
-            }
-            Bullet.removeDeadBullets();
         }
 
         function executeCommand(command) {
@@ -469,8 +468,15 @@
             //Locally move the turret
             //alert("sessionId " + sessionId);
             var ps = PlayerSession.all[sessionId];
-            ps.turret.hor = hor;
-            ps.turret.ver = ver;
+            if (hor != 0 && ver != 0) {
+                var speed = ps.turret.speed * Math.cos(Math.PI / 4);
+                ps.turret.x = Math.round(ps.turret.x + hor * speed);
+                ps.turret.y = Math.round(ps.turret.y + hor * speed);
+            } else if (hor == 0 && ver != 0) {
+                ps.turret.y = Math.round(ps.turret.y + hor * ps.turret.speed);
+            } else if (ver == 0 && hor != 0) {
+                ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
+            }
             socket.emit("moveStart", {
                 "sessionId": sessionId,
                 "hor": hor,
@@ -863,19 +869,24 @@
             //debug("bullet : " + data);
             var bullet = Bullet.all[data["id"]];
             //debug("bullet : " + bullet);
-            bullet.px = bullet.x;
-            bullet.py = bullet.y;
-            bullet.x = data["x"];
-            bullet.y = data["y"];
+            if (bullet.px == data["x"] && bullet.py == data["y"])
+                bullet.remove();
+            else {
+                bullet.px = bullet.x;
+                bullet.py = bullet.y;
+                bullet.x = data["x"];
+                bullet.y = data["y"];
+            }
         };
       
         Bullet.removeDeadBullets = function() {
             for (var i in Bullet.all) {
                 if (Bullet.all.hasOwnProperty(i)) {
                     var bullet = Bullet.all[i];
-                    if (bullet.x == bullet.px && bullet.y == bullet.py)
-                        //alert("dead bullet " + bullet.id);
+                    if (bullet.x == bullet.px && bullet.y == bullet.py) {
+                        alert("dead bullet " + bullet.id);
                         delete Bullet.all[i];
+                    }
                 }
             }  
         };
