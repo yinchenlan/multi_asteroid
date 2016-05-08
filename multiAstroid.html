@@ -351,6 +351,7 @@
                 removeRock(key);
                 delete deleteRockSet[key];
             }
+            //Bullet.removeDeadBullets();
         }
 
         function executeCommand(command) {
@@ -867,11 +868,16 @@
 
         Bullet.moveBullet = function(data) {
             //debug("bullet : " + data);
-            var bullet = Bullet.all[data["id"]];
-            //debug("bullet : " + bullet);
-            if (bullet.px == data["x"] && bullet.py == data["y"])
-                bullet.remove();
-            else {
+            var bullet = Bullet.all[data["id"]];          
+            if (bullet == null) {
+                var sId = data["sessionId"];
+                var ps = PlayerSession.all[sId];
+                var color = "white";
+                if (ps != null)
+                    color = ps.turret.color;
+                new Bullet(data["x"], data["y"], data["r"], color, sId, data["id"]); 
+            } else {
+                //debug("bullet : " + bullet);
                 bullet.px = bullet.x;
                 bullet.py = bullet.y;
                 bullet.x = data["x"];
@@ -883,10 +889,14 @@
             for (var i in Bullet.all) {
                 if (Bullet.all.hasOwnProperty(i)) {
                     var bullet = Bullet.all[i];
-                    if (bullet.x == bullet.px && bullet.y == bullet.py) {
-                        alert("dead bullet " + bullet.id);
+                    if (bullet.x === bullet.px && bullet.y === bullet.py) {
+                        //alert("dead bullet " + bullet.id);
                         delete Bullet.all[i];
-                    }
+                    } else if (bullet.x != bullet.px || bullet.y != bullet.py) {
+                        bullet.px = bullet.x;
+                        bullet.py = bullet.y;
+                        //alert("updating px,py");
+                    } 
                 }
             }  
         };
