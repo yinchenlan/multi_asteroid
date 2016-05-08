@@ -88,6 +88,20 @@ io.on("connection", function(socket) {
         socket.emit("createRock", Rock.all[rockId].serialize());
     }
 
+    socket.on("gb", function(data) {
+	var id = data["id"];
+        var bullet = Bullet.all[id];
+        if (bullet != null)
+            socket.emit("gb", bullet.serialize());
+    });
+
+    socket.on("gr", function(data) {
+	    var id = data["id"];
+	    var rock = Rock.all[id];
+	    if (bullet != null)
+		socket.emit("gr", rock.serialize());
+    });
+
     socket.on("disconnect", function(data) {
 	    console.log("disconnect : " + data);
         var sessionId = socket.id;
@@ -838,7 +852,7 @@ function moveBullets() {
             bullet.x += bullet.vx;
             bullet.y += bullet.vy;
             //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
-            addCommand(["updateBullet", {"id" : bullet.id, "sessionId" : bullet.sessionId, "r" : bullet.r, "x" : bullet.x, "y" : bullet.y}]);
+            addCommand(["updateBullet", {"id" : bullet.id, "x" : bullet.x, "y" : bullet.y}]);
             //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);        
             bulletCollideRock(bullet);
             bulletCollideTurret(bullet);
