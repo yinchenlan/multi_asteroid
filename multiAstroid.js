@@ -98,7 +98,7 @@ io.on("connection", function(socket) {
     socket.on("gr", function(data) {
 	    var id = data["id"];
 	    var rock = Rock.all[id];
-	    if (bullet != null)
+	    if (rock != null)
 		socket.emit("gr", rock.serialize());
     });
 

@@ -956,8 +956,10 @@
 
         Rock.moveRock = function(data) {
             var rock = Rock.all[data["id"]];
-            if (rock == null)
+            if (rock == null) {
+                //alert("null rock");
                 socket.emit("gr", {"id" : data["id"]});
+            }
             else {
                 rock.x = data["x"];
                 rock.y = data["y"];
