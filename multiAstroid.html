@@ -54,6 +54,9 @@
         function resizeCanvas() {
 	    canvas.width = window.innerWidth - 10;
 	    canvas.height = window.innerHeight - 30;
+            updateScale();
+            if (socket != null)
+                socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
 	}
         
         function setNickName() {
@@ -70,22 +73,22 @@
 
         function getXOffset() {
             var negX = -1 * PlayerSession.all[sessionId].turret.x;
-            var offset = negX + canvas.width/2;
-	    if (PlayerSession.all[sessionId].turret.x < canvas.width/2) {
+            var offset = negX + canvas.width/2/scale;
+	    if (PlayerSession.all[sessionId].turret.x < canvas.width/2/scale) {
 	        return 0;
-            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - canvas.width/2) {
-	        return -(MAX_X - canvas.width);
+            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - canvas.width/2/scale) {
+	        return -(MAX_X - canvas.width/scale);
 	    }
             return offset;
         }
 
         function getYOffset() {
             var negY = -1 * PlayerSession.all[sessionId].turret.y;
-            var offset = negY + gameCanvas.height/2;
-            if (PlayerSession.all[sessionId].turret.y < canvas.height/2) {
+            var offset = negY + gameCanvas.height/2/scale;
+            if (PlayerSession.all[sessionId].turret.y < canvas.height/2/scale) {
 		return 0;       
-            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - canvas.height/2) {
-	    return -(MAX_Y - canvas.height);
+            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - canvas.height/2/scale) {
+	    return -(MAX_Y - canvas.height/scale);
             }
             return offset;
         }
@@ -103,8 +106,8 @@
             // return relative mouse position
             var ps = PlayerSession.all[sessionId];
             var turret = ps.turret;
-            turret.mousePosX = -getXOffset() + evt.clientX - left + window.pageXOffset;
-            turret.mousePosY = -getYOffset() + evt.clientY - top + window.pageYOffset;
+            turret.mousePosX = (-getXOffset() + evt.clientX / scale - left + window.pageXOffset);
+            turret.mousePosY = (-getYOffset() + evt.clientY / scale - top + window.pageYOffset);
             socket.emit("mousePos", {
                 "mousePosX": turret.mousePosX,
                 "mousePosY": turret.mousePosY
@@ -131,8 +134,18 @@
         var deletePlayerSessionSet = {};
         var MAX_X = 3200;
         var MAX_Y = 2400;
+        var WINDOW_X_SIZE = 800;
+        var WINDOW_Y_SIZE = 600;
         var starsCanvas = null;
         var starsCtx = null;
+        var scale = 1;
+
+        function updateScale() {
+            var scaleX = canvas.width / WINDOW_X_SIZE;
+            var scaleY = canvas.height / WINDOW_Y_SIZE;
+            scale = Math.max(1, Math.max(scaleX, scaleY));
+            ctx.scale(scale, scale);
+        }
 
         function strcmp(a, b) {
             if (a.toString() < b.toString()) return -1;
@@ -141,18 +154,13 @@
         }
 
 	var sInterval = setInterval(function() {
-	    scores = [];
-            for(var key in PlayerSession.all) {
-	        if (PlayerSession.all.hasOwnProperty(key)) {
-	            var ps = PlayerSession.all[key];
-	            scores.push(ps);
-                }
+            if (scores != null) {
+                scores.sort(function(a, b) {
+                    var diff = b["s"] - a["s"];
+	            if (diff == 0) diff = strcmp(b["n"], a["n"]);
+                    return diff;
+                });
             }
-            scores.sort(function(a, b) {
-                var diff = b.kills - a.kills;
-	        if (diff == 0) diff = strcmp(b.name, a.name);
-                return diff;
-            });
 	}, 1000);
 
         var laser = document.getElementById("laser");
@@ -172,14 +180,16 @@
                 var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
                 //alert("Creating player session " + sessionId);
                 setNickNameToPlayerSession();
+                socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
             });
 
             socket.on("gb", function(data) {
                 var bullet = Bullet.deserialize(data);
             });
 
-            socket.on("gr", function(data) {
-                var rock = Rock.deserialize(data);
+            socket.on("lb", function(data) {
+                scores = data["ss"];
+                //alert("lb " + scores.length);
             });
 
             socket.on("stars", function(data) {
@@ -298,12 +308,8 @@
         };
 
 
-        function turretMoves(data) {
-            //debug("turretMoves");
-            var turretMoves = data["turretMoves"];
-            //debug("Number of players = " + turretMoves.length);
-            for (var idx in turretMoves) {
-                var turretMove = turretMoves[idx];
+        function turretMove(data) {
+                var turretMove = data;
                 var sessId = turretMove["sessionId"];
                 var x = turretMove["x"];
                 var y = turretMove["y"];
@@ -334,9 +340,6 @@
                 turret.recoilX = recoilX;
                 turret.recoilY = recoilY;
                 turret.life = turretMove["life"];
-                //moveRocks();
-                //moveBullets();
-            }
         };
 
         function executeCommands(commands) {
@@ -351,14 +354,39 @@
                 removeBullet(key);
                 delete deleteBulletSet[key];
             }
+            for (var key in Bullet.all) {
+                var bullet = Bullet.all[key];
+                var x = bullet.x + getXOffset();
+                var y = bullet.y + getYOffset();
+                if (x < 0 || x > 800 || y < 0 || y > 600) 
+                    bullet.remove();
+            }
             for (var key in deletePlayerSessionSet) {
                 removePlayer(key);
                 delete deletePlayerSessionSet[key];
             }
+
+            for (var key in PlayerSession.all) {
+		var ps = PlayerSession.all[key];
+		var x = ps.turret.x + getXOffset();
+		var y = ps.turret.y + getYOffset();
+		if (x < 0 || x> 800 ||y < 0 || y > 600)
+                    ps.remove();
+            }
+
             for (var key in deleteRockSet) {
                 removeRock(key);
                 delete deleteRockSet[key];
             }
+
+            for (var key in Rock.all) {
+                var rock = Rock.all[key];
+                var x = rock.x + getXOffset();
+                var y = rock.y + getYOffset();
+                if (x < 0 || x> 800 ||y < 0 || y > 600) 
+                    rock.remove();
+            }
+
             //Bullet.removeDeadBullets();
         }
 
@@ -390,8 +418,8 @@
                     deleteRockSet[command[1]["id"]] = 1;
                     //removeRock(command[1]);
                     break;
-                case "turretMoves":
-                    turretMoves(command[1]);
+                case "tm":
+                    turretMove(command[1]);
                     break;
                 case "updateRock":
                     Rock.moveRock(command[1]);
@@ -660,7 +688,7 @@
             ctx.save();
             ctx.font = "8pt Courier New";
             ctx.fillStyle = "greenyellow";
-            ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", canvas.width/2 - 200, 25);
+            ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", canvas.width/2/scale - 200, 25);
             ctx.restore();
         }
 
@@ -693,17 +721,18 @@
             ctx.save();
             ctx.font = "8pt Calibri";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("Leader Board : ", canvas.width - 120, 50);
+            ctx.fillText("Leader Board : ", canvas.width/scale - 120, 50);
             ctx.restore();
             ctx.save();
             ctx.font = "8pt Calibri";
             ctx.fillStyle = "green";
             var inc = 20;
             //debug("scores " + scores);
+            var cnt = 0;
             for (var idx in scores) {
-                if (idx > 9) break;
+                if (cnt++ > 9) break;
                 var sc = scores[idx];
-                ctx.fillText("" + sc.name + " : " + sc.kills, canvas.width - 120, 50 + inc);
+                ctx.fillText("" + sc["n"] + " : " + sc["s"], canvas.width/scale - 120, 50 + inc);
                 inc += 20;
             }
             ctx.restore();
@@ -1069,7 +1098,7 @@
               ctx.save();
               ctx.lineWidth = 2;
               ctx.strokeStyle = "#6495ED";
-              ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+              ctx.strokeRect(2, 2, canvas.width/scale - 4, canvas.height/scale - 4);
               ctx.restore();
               drawTurrets();
               Bullet.draw_all();
