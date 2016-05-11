@@ -154,13 +154,13 @@
         }
 
 	var sInterval = setInterval(function() {
-            if (scores != null) {
-                scores.sort(function(a, b) {
-                    var diff = b["s"] - a["s"];
-	            if (diff == 0) diff = strcmp(b["n"], a["n"]);
-                    return diff;
-                });
-            }
+            //if (scores != null) {
+            //    scores.sort(function(a, b) {
+            //        var diff = b["s"] - a["s"];
+	    //        if (diff == 0) diff = strcmp(b["n"], a["n"]);
+            //        return diff;
+            //    });
+            //}
 	}, 1000);
 
         var laser = document.getElementById("laser");
