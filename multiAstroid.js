@@ -544,7 +544,7 @@ function emitWorld() {
     for (var k in PlayerSession.all) {
         //if (PlayerSession.all.hasOwnProperty(k)) {
             var ps = PlayerSession.all[k];
-            verifyUpdate(ps);
+            //verifyUpdate(ps);
             ps.sendUpdate();
 	    //}
     }
