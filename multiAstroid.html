@@ -105,13 +105,15 @@
             }
             // return relative mouse position
             var ps = PlayerSession.all[sessionId];
-            var turret = ps.turret;
-            turret.mousePosX = (-getXOffset() + evt.clientX / scale - left + window.pageXOffset);
-            turret.mousePosY = (-getYOffset() + evt.clientY / scale - top + window.pageYOffset);
-            socket.emit("mousePos", {
-                "mousePosX": turret.mousePosX,
-                "mousePosY": turret.mousePosY
-            });
+            if (ps != null) {
+                var turret = ps.turret;
+                turret.mousePosX = (-getXOffset() + evt.clientX / scale - left + window.pageXOffset);
+                turret.mousePosY = (-getYOffset() + evt.clientY / scale - top + window.pageYOffset);
+                socket.emit("mousePos", {
+                    "mousePosX": turret.mousePosX,
+                    "mousePosY": turret.mousePosY
+                });
+            }
         }
         var hor = 0,
             ver = 0,
@@ -268,7 +270,8 @@
         function damagePlayer(data) {
             //debug("damagePlayer");
             var ps = PlayerSession.all[data["sessionId"]];
-            ps.turret.life = data["life"];
+            if (ps != null)
+                ps.turret.life = data["life"];
         };
 
 
@@ -346,6 +349,8 @@
         function executeCommands(commands) {
             //debug("command length : " + commands.length);
             for (var idx in commands) {
+                var cmd = commands[idx];
+                //if (cmd[0] == "removePlayer") alert ("hi ");
                 executeCommand(commands[idx]);
             }
         }
@@ -517,11 +522,12 @@
             //} else if (ver == 0 && hor != 0) {
             //    ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
             //}
-            socket.emit("moveStart", {
-                "sessionId": sessionId,
-                "hor": hor,
-                "ver": ver
-            }); 
+            if (socket != null)
+                socket.emit("moveStart", {
+                    "sessionId": sessionId,
+                    "hor": hor,
+                    "ver": ver
+                }); 
             //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
         }, true);
         window.addEventListener('keyup', function(event) {
@@ -549,9 +555,10 @@
             }
             //if (event.preventDefault) { event.preventDefault(); }
             //if (event.stopPropagation) { event.stopPropagation(); }
-            socket.emit("moveEnd", {
-                "sessionId": sessionId
-            }); 
+            if (socket != null) 
+                socket.emit("moveEnd", {
+                    "sessionId": sessionId
+                }); 
             //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
         }, true);
 
@@ -661,14 +668,17 @@
 
         function drawLocation() {
             // Draw location
-            ctx.save();
-            ctx.font = "8pt Courier New";
-            ctx.fillStyle = "yellow";
-            var x = PlayerSession.all[sessionId].turret.x;
-            var y = PlayerSession.all[sessionId].turret.y;
-            ctx.fillText("Location: " + x + "," +
-                y, 10, 25);
-            ctx.restore();
+            var ps = PlayerSession.all[sessionId];
+            if (ps != null) {
+                ctx.save();
+                ctx.font = "8pt Courier New";
+                ctx.fillStyle = "yellow";
+                var x = PlayerSession.all[sessionId].turret.x;
+                var y = PlayerSession.all[sessionId].turret.y;
+                ctx.fillText("Location: " + x + "," +
+                    y, 10, 25);
+                ctx.restore();
+            }
         }
         
         function drawNumPlayers() {
@@ -1050,11 +1060,13 @@
         canvas.addEventListener('mousedown', function(evt) {
             if (gamePaused == 1 || gameOver == 1) return;
             mouseDown = 1;
-            socket.emit("mouseDown");
+            if (socket != null)
+                socket.emit("mouseDown");
         }, false);
         canvas.addEventListener('mouseup', function(evt) {
             mouseDown = 0;
-            socket.emit("mouseUp");
+            if (socket != null)
+                socket.emit("mouseUp");
         }, false);
         canvas.onselectstart = function() {
             return false;

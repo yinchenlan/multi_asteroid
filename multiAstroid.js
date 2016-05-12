@@ -25,12 +25,16 @@ function initializeStarsPositions() {
 
 function addCommand(command, pos) {
     for (var k in PlayerSession.all) {
-        if (PlayerSession.all.hasOwnProperty(k)) {
+        //if (PlayerSession.all.hasOwnProperty(k)) {
             var ps = PlayerSession.all[k];
             if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) == 1)) {
-                ps.pushCommand(command);
+                if (command[0] == "removePlayer") {
+                    console.log("removePlayer " + command[1]["sessionId"]);
+		    //debugger;
+                }
+                ps.pushCommand(command);      
 	    }
-        }
+	    //}
     }
     //commandQueue.push(command);
 }
@@ -68,7 +72,6 @@ function createBOT() {
 function createPlayerSession(id, socket) {
     var turret = new Turret(Math.round(Math.random() * (MAX_X - 40)) + 20, Math.round(Math.random() * (MAX_Y - 40)) + 20, id);
     var playerSession = new PlayerSession(id, turret, 0, socket);
-    playerSession.socket = socket;
     playerSession.name = "NAME";
     if (socket != null) {
         socket.emit("connected", {
@@ -452,6 +455,7 @@ PlayerSession.prototype = {
     sendUpdate: function() {
         if (this.commandQueue.length == 0) return;
         if (this.socket != null) {
+            //console.log("sendUpdate");
             this.socket.emit("updateWorld", {"updateWorld" : this.commandQueue});
             this.commandQueue = [];
         }
@@ -538,9 +542,24 @@ var t = setInterval(function() {
 
 function emitWorld() {
     for (var k in PlayerSession.all) {
-        if (PlayerSession.all.hasOwnProperty(k)) {
+        //if (PlayerSession.all.hasOwnProperty(k)) {
             var ps = PlayerSession.all[k];
+            verifyUpdate(ps);
             ps.sendUpdate();
+	    //}
+    }
+}
+
+function verifyUpdate(ps) {
+    var cnt = 0;
+    //while (cnt++ < ps.commandQueue.length) {
+    for (var k in ps.commandQueue) {
+        var cmd = ps.commandQueue[k];
+        //console.log("command " + cmd[0]);
+        if (cmd != null && cmd[0] == "removePlayer" /*&& cmd[1]["sessionId"]*/) {
+            console.log("verified");
+            debugger;
+            break;
         }
     }
 }
@@ -786,7 +805,7 @@ function rockCollideTurret(rock, ps) {
             addCommand(["removePlayer", {
                 "sessionId": ps.sessionId
 		    }], null);
-            console.log("remove player 2 " + ps.sessionId);
+            //console.log("remove player 2 " + ps.sessionId);
             ps.remove();
         } else {
             ps.turret.life = ps.turret.life - damage;
