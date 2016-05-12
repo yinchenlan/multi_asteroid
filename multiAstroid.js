@@ -29,7 +29,7 @@ function addCommand(command, pos) {
             var ps = PlayerSession.all[k];
             if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) == 1)) {
                 ps.pushCommand(command);
-            }
+	    }
         }
     }
     //commandQueue.push(command);
@@ -451,8 +451,10 @@ PlayerSession.prototype = {
     },
     sendUpdate: function() {
         if (this.commandQueue.length == 0) return;
-        this.socket.emit("updateWorld", {"updateWorld" : this.commandQueue});
-        this.commandQueue = [];
+        if (this.socket != null) {
+            this.socket.emit("updateWorld", {"updateWorld" : this.commandQueue});
+            this.commandQueue = [];
+        }
     },
     isVisibleTo: function(pos) { 
         return true;
@@ -784,7 +786,7 @@ function rockCollideTurret(rock, ps) {
             addCommand(["removePlayer", {
                 "sessionId": ps.sessionId
 		    }], null);
-            //console.log("remove player 2 " + ps.sessionId);
+            console.log("remove player 2 " + ps.sessionId);
             ps.remove();
         } else {
             ps.turret.life = ps.turret.life - damage;

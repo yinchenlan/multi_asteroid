@@ -246,12 +246,14 @@
         }
 
         function removePlayer(data) {
-            //alert("removePlayer before");
+            //alert("removePlayer before " + data);
             var ps = PlayerSession.all[data];
             //if (ps == null) alert("null ps");
             if (ps != null) {
                 ps.remove();
+                //alert("data : " + data + ", sessionId : " + sessionId);
                 if (data == sessionId) {
+                    //alert("remove self");
                     socket.disconnect();
                     gameOver = 1;
                     Rock.all = {};
@@ -259,7 +261,6 @@
                     PlayerSession.all = {};
                     unhideForm();
                 }
-                
                 //alert("removing session " + sessionId);
             }
         };
@@ -358,10 +359,11 @@
                 var bullet = Bullet.all[key];
                 var x = bullet.x + getXOffset();
                 var y = bullet.y + getYOffset();
-                if (x < 0 || x > 800 || y < 0 || y > 600) 
+                if (x < -100 || x > 900 || y < -100 || y > 700) 
                     bullet.remove();
             }
             for (var key in deletePlayerSessionSet) {
+                //alert("remove player " + key);
                 removePlayer(key);
                 delete deletePlayerSessionSet[key];
             }
@@ -370,7 +372,7 @@
 		var ps = PlayerSession.all[key];
 		var x = ps.turret.x + getXOffset();
 		var y = ps.turret.y + getYOffset();
-		if (x < 0 || x> 800 ||y < 0 || y > 600)
+		if (x < -100 || x> 900 ||y < -100 || y > 700)
                     ps.remove();
             }
 
@@ -383,7 +385,7 @@
                 var rock = Rock.all[key];
                 var x = rock.x + getXOffset();
                 var y = rock.y + getYOffset();
-                if (x < 0 || x> 800 ||y < 0 || y > 600) 
+                if (x < -100 || x> 900 ||y < -100 || y > 700) 
                     rock.remove();
             }
 
@@ -391,10 +393,11 @@
         }
 
         function executeCommand(command) {
-            //if (command[0] == "removePlayer") alert ("remove " + command[1]["sessionId"]);
+            if (command[0] == "removePlayer") alert ("remove " + command[1]["sessionId"]);
             //debug("command : " + command[0]);
             switch (command[0]) {
                 case "removePlayer":
+                    alert("remove player " + command[1]["sessionId"]);
                     deletePlayerSessionSet[command[1]["sessionId"]] = 1;
                     //removePlayer(command[1]);
                     break;
@@ -504,16 +507,16 @@
             //if (event.stopPropagation) { event.stopPropagation(); }
             //Locally move the turret
             //alert("sessionId " + sessionId);
-            var ps = PlayerSession.all[sessionId];
-            if (hor != 0 && ver != 0) {
-                var speed = ps.turret.speed * Math.cos(Math.PI / 4);
-                ps.turret.x = Math.round(ps.turret.x + hor * speed);
-                ps.turret.y = Math.round(ps.turret.y + hor * speed);
-            } else if (hor == 0 && ver != 0) {
-                ps.turret.y = Math.round(ps.turret.y + hor * ps.turret.speed);
-            } else if (ver == 0 && hor != 0) {
-                ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
-            }
+            //var ps = PlayerSession.all[sessionId];
+            //if (hor != 0 && ver != 0) {
+            //    var speed = ps.turret.speed * Math.cos(Math.PI / 4);
+            //    ps.turret.x = Math.round(ps.turret.x + hor * speed);
+            //    ps.turret.y = Math.round(ps.turret.y + hor * speed);
+            //} else if (hor == 0 && ver != 0) {
+            //    ps.turret.y = Math.round(ps.turret.y + hor * ps.turret.speed);
+            //} else if (ver == 0 && hor != 0) {
+            //    ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
+            //}
             socket.emit("moveStart", {
                 "sessionId": sessionId,
                 "hor": hor,
@@ -1073,9 +1076,9 @@
             if (starsCanvas == null) return;
             ctx.save();
             if(starsPositions.length > 0) 
-                ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.drawImage(starsCanvas, -getXOffset(), -getYOffset(), canvas.width/scale, canvas.height/scale, 0, 0, canvas.width/scale, canvas.height/scale);
             else 
-                ctx.drawImage(starsCanvas, 0, 0, gameCanvas.width, gameCanvas.height, 0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.drawImage(starsCanvas, 0, 0, canvas.width/scale, canvas.height/scale, 0, 0, canvas.width/scale, canvas.height/scale);
             ctx.restore();
             //alert("draw stars");
         }
