@@ -126,6 +126,7 @@
         var rockDate = new Date();
         var mouseDate = new Date();
         var scores = [];
+        //var unsortedScores = [];
         var socket = null;
         var sessionId = null;
         var transparency = 0.4;
@@ -155,15 +156,19 @@
             return 0;
         }
 
-	var sInterval = setInterval(function() {
-            //if (scores != null) {
-            //    scores.sort(function(a, b) {
-            //        var diff = b["s"] - a["s"];
-	    //        if (diff == 0) diff = strcmp(b["n"], a["n"]);
-            //        return diff;
-            //    });
-            //}
-	}, 1000);
+	function sortScores() {
+            var rv = scores.splice(0);
+            if (rv != null) {
+                rv.sort(function(a, b) {
+                    var diff = b["s"] - a["s"];
+                    //if (diff > 0) alert("diff " + diff);
+	            if (diff == 0) diff = strcmp(b["n"], a["n"]);
+                    //if (diff != 0) alert("diff " + diff);
+                    return diff;
+	        });
+            }
+            return rv;
+        }
 
         var laser = document.getElementById("laser");
 
@@ -185,13 +190,20 @@
                 socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
             });
 
+            socket.on("rp", function(data) {
+                deletePlayerSessionSet[data["sId"]] = 1;
+            });
+
             socket.on("gb", function(data) {
                 var bullet = Bullet.deserialize(data);
             });
 
             socket.on("lb", function(data) {
-                scores = data["ss"];
-                //alert("lb " + scores.length);
+                if (data["ss"] != null) { 
+                    scores = data["ss"];
+                    scores = sortScores();      
+                    //alert("lb " + scores.length);
+                }
             });
 
             socket.on("stars", function(data) {
@@ -742,6 +754,7 @@
             var inc = 20;
             //debug("scores " + scores);
             var cnt = 0;
+            //var s = sortScores();
             for (var idx in scores) {
                 if (cnt++ > 9) break;
                 var sc = scores[idx];
@@ -801,9 +814,9 @@
         //Rock to Turret collision
         function rockCollideTurret(rock) {
             if (distance(turret.x, turret.y, rock.x, rock.y) <= (5 + rock.r)) {
-                gameOver = 1;
-                scores = [];
-                socket.emit('submitscore', score);
+                //gameOver = 1;
+                //scores = [];
+                //socket.emit('submitscore', score);
             }
         }
 

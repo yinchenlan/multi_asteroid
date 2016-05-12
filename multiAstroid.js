@@ -24,17 +24,21 @@ function initializeStarsPositions() {
 }
 
 function addCommand(command, pos) {
-    for (var k in PlayerSession.all) {
-        //if (PlayerSession.all.hasOwnProperty(k)) {
-            var ps = PlayerSession.all[k];
-            if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) == 1)) {
-                if (command[0] == "removePlayer") {
-                    console.log("removePlayer " + command[1]["sessionId"]);
-		    //debugger;
-                }
-                ps.pushCommand(command);      
+    if (command[0] == "removePlayer") 
+        io.sockets.emit("rp", {"sId": command[1]["sessionId"]});
+    else {
+        for (var k in PlayerSession.all) {
+            if (PlayerSession.all.hasOwnProperty(k)) {
+                var ps = PlayerSession.all[k];
+                if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) == 1)) {
+                    if (command[0] == "removePlayer") {
+                        console.log("removePlayer " + command[1]["sessionId"]);
+		        //debugger;
+                    }
+                    ps.pushCommand(command);      
+	        }
 	    }
-	    //}
+        }
     }
     //commandQueue.push(command);
 }
@@ -139,7 +143,7 @@ io.on("connection", function(socket) {
         //});
         addCommand(["removePlayer", {
             "sessionId": sessionId
-		}], null);
+		}], [playerSession.turret.x, playerSession.turret.y]);
 	//console.log("remove player 1 " + sessionId);
     });
 
@@ -397,7 +401,7 @@ PlayerSession.prototype = {
             //});
             addCommand(["matureSession", {
                 "sessionId": this.sessionId
-		    }], null); 
+		    }], [this.turret.x, this.turret.y]); 
             return false;
         }
     },
@@ -495,6 +499,8 @@ PlayerSession.prototype = {
 
 initializeStarsPositions();
 
+var lastPushTime = new Date();
+
 //Tick the world
 var t = setInterval(function() {
     var turretMoves = [];
@@ -537,7 +543,12 @@ var t = setInterval(function() {
     moveRocks();
     createAllBullets();
     emitWorld();
-    io.sockets.emit("lb", {"ss" : scoreQueue});
+    //console.log("queue length = " + scoreQueue.length);
+    var now = new Date();
+    if (now.getTime() - lastPushTime.getTime() >= 2000) {
+        io.sockets.emit("lb", {"ss" : scoreQueue});
+        lastPushTime = now;
+    }
 }, 1000 / 30);
 
 function emitWorld() {
@@ -590,7 +601,7 @@ Bullet.prototype = {
         //});
         addCommand(["removeBullet", {
             "id": this.id
-		}], null);
+		}], [this.x, this.y]);
     },
     serialize: function() {
         return {
@@ -669,7 +680,7 @@ Rock.prototype = {
         //});
         addCommand(["removeRock", {
             "id": this.id
-		}], null);
+		}], [this.x, this.y]);
     },
     resize: function() {
         this.coords = [];
@@ -681,7 +692,7 @@ Rock.prototype = {
             this.coords.push(coord);
         }
         //io.sockets.emit("resizeRock", this.serialize());
-        addCommand(["resizeRock", this.serialize()], null);
+        addCommand(["resizeRock", this.serialize()], [this.x, this.y]);
     },
     serialize: function() {
         var retVal = {
@@ -804,7 +815,7 @@ function rockCollideTurret(rock, ps) {
             //});
             addCommand(["removePlayer", {
                 "sessionId": ps.sessionId
-		    }], null);
+		    }], [ps.turret.x, ps.turret.y]);
             //console.log("remove player 2 " + ps.sessionId);
             ps.remove();
         } else {
@@ -838,7 +849,7 @@ function bulletCollideTurret(bullet) {
                     if (ps != null) {
                         addCommand(["removePlayer", {
                             "sessionId": ps.sessionId
-				}], null);
+				}], [ps.turret.x, ps.turret.y]);
 			//console.log("remove player 3 " + ps.sessionId);
                     ps.remove();
                     }
@@ -876,7 +887,7 @@ function turretCollideTurret(turret) {
                         shooterSession.kills += 1;
                     addCommand(["removePlayer", {
 				"sessionId": ps.sessionId
-				    }], null);
+				    }], [ps.turret.x, ps.turret.y]);
                     //console.log("remove player 4 " + ps.sessionId);
                     ps.remove();
                 } else {
@@ -892,7 +903,7 @@ function turretCollideTurret(turret) {
                     ps.kills += 1;
                     addCommand(["removePlayer", {
                                 "sessionId": playerSession.sessionId
-                                    }], null);
+                                    }], [playerSession.turret.x, playerSession.turret.y]);
                     playerSession.remove();
                     //console.log("remove player 5 " + playerSession.sessionId);
                 } else {
