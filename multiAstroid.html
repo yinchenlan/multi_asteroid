@@ -72,25 +72,31 @@
         }
 
         function getXOffset() {
-            var negX = -1 * PlayerSession.all[sessionId].turret.x;
-            var offset = negX + canvas.width/2/scale;
-	    if (PlayerSession.all[sessionId].turret.x < canvas.width/2/scale) {
-	        return 0;
-            } else if (PlayerSession.all[sessionId].turret.x > MAX_X - canvas.width/2/scale) {
-	        return -(MAX_X - canvas.width/scale);
-	    }
-            return offset;
+            if (sessionId != null && PlayerSession.all[sessionId] != null) {
+                var negX = -1 * PlayerSession.all[sessionId].turret.x;
+                var offset = negX + canvas.width/2/scale;
+	        if (PlayerSession.all[sessionId].turret.x < canvas.width/2/scale) {
+	            return 0;
+                } else if (PlayerSession.all[sessionId].turret.x > MAX_X - canvas.width/2/scale) {
+	            return -(MAX_X - canvas.width/scale);
+	        }
+                return offset; 
+            }
+            return 0;
         }
 
         function getYOffset() {
-            var negY = -1 * PlayerSession.all[sessionId].turret.y;
-            var offset = negY + gameCanvas.height/2/scale;
-            if (PlayerSession.all[sessionId].turret.y < canvas.height/2/scale) {
-		return 0;       
-            } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - canvas.height/2/scale) {
-	    return -(MAX_Y - canvas.height/scale);
+            if (sessionId != null && PlayerSession.all[sessionId] !=null) {
+                var negY = -1 * PlayerSession.all[sessionId].turret.y;
+                var offset = negY + gameCanvas.height/2/scale;
+                if (PlayerSession.all[sessionId].turret.y < canvas.height/2/scale) {
+		    return 0;       
+                } else if (PlayerSession.all[sessionId].turret.y > MAX_Y - canvas.height/2/scale) {
+	            return -(MAX_Y - canvas.height/scale);
+                }
+                return offset;
             }
-            return offset;
+            return 0;
         }
 
         function getMousePos(canvas, evt) {
