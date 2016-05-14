@@ -399,9 +399,9 @@ PlayerSession.prototype = {
             //io.sockets.emit("matureSession", {
             //    "sessionId": this.sessionId
             //});
-            addCommand(["matureSession", {
-                "sessionId": this.sessionId
-		    }], [this.turret.x, this.turret.y]); 
+            //addCommand(["matureSession", {
+            //    "sessionId": this.sessionId
+	    //	    }], [this.turret.x, this.turret.y]); 
             return false;
         }
     },
