@@ -6,7 +6,7 @@ var app = require('http').createServer(handler),
     scores = [],
     MAX_X = 3200,
     MAX_Y = 2400,
-    NUM_ROCKS = 40,
+    NUM_ROCKS = 100,
     NUM_STARS = 1000,
     port = process.env.PORT || 8125,
     starPositions=[],
@@ -24,17 +24,16 @@ function initializeStarsPositions() {
 }
 
 function addCommand(command, pos) {
+    //console.log("command : " + command[0]);
     if (command[0] == "removePlayer") 
         io.sockets.emit("rp", {"sId": command[1]["sessionId"]});
     else {
         for (var k in PlayerSession.all) {
             if (PlayerSession.all.hasOwnProperty(k)) {
                 var ps = PlayerSession.all[k];
-                if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) == 1)) {
-                    if (command[0] == "removePlayer") {
-                        console.log("removePlayer " + command[1]["sessionId"]);
-		        //debugger;
-                    }
+                if (ps.isBot == 0)
+		    //console.log("loc " + ps.turret.x + ", " + ps.turret.y);
+                if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) === 1)) {
                     ps.pushCommand(command);      
 	        }
 	    }
@@ -399,7 +398,7 @@ PlayerSession.prototype = {
             //io.sockets.emit("matureSession", {
             //    "sessionId": this.sessionId
             //});
-            //addCommand(["matureSession", {
+	    // addCommand(["matureSession", {
             //    "sessionId": this.sessionId
 	    //	    }], [this.turret.x, this.turret.y]); 
             return false;
@@ -465,17 +464,23 @@ PlayerSession.prototype = {
         }
     },
     isVisibleTo: function(pos) { 
-        return true;
+        //return 1;
         if (pos == null || pos.length != 2) return 0;
         var xos = this.getXOffset(); 
         var yos = this.getYOffset();
-        if (pos[0] + xos >= 0 && pos[0] <= 800 && 
-            pos[1] +yos >= 0 && pos[1] <= 600) {
+        //console.log("here");
+        //console.log("offset " + xos + ", " + yos);
+        //console.log("net pos " + (pos[0] + xos) + ", " +  (pos[1] + yos));
+        if ((pos[0] + xos) >= -150 && pos[0] + xos <= 950 && 
+            (pos[1] + yos) >= -150 && pos[1] + yos <= 750) {
+            //console.log("here 3");
             return 1;
         }
+        //console.log("here 2");
         return 0;
     },
     getXOffset: function() {
+        //console.log("here");
         var negX = -1 * this.turret.x;
 	var offset = negX + this.canvasWidth/2/this.scale;
 	if (this.turret.x < this.canvasWidth/2/this.scale) {
@@ -483,6 +488,7 @@ PlayerSession.prototype = {
 	} else if (this.turret.x > MAX_X - this.canvasWidth/2/this.scale) {
 	    return -(MAX_X - this.canvasWidth/this.scale);
 	}
+        //console.log("here");
 	return offset;
     },
     getYOffset: function() {
@@ -506,22 +512,23 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 10) {
+    if (Object.keys(PlayerSession.all).length < 20) {
 	createBOT();
     }
     var scoreQueue = [];
     for (var key in PlayerSession.all) {
         if (PlayerSession.all.hasOwnProperty(key)) {
             var ps = PlayerSession.all[key];
-            var sessionId = ps.sessionId;
+            var sId = ps.sessionId;
             var turret = ps.turret;
             if (ps.isBot == 1) ps.tick();
             else {
                turret.move();
             }
             scoreQueue.push({"n": ps.name, "s": ps.kills});
+            var loc = [turret.x, turret.y];
             addCommand(["tm", {
-		    "sessionId": sessionId,
+		    "sessionId": sId,
 			"x": turret.x,
 			"y": turret.y,
 			"color": turret.color,
@@ -535,7 +542,7 @@ var t = setInterval(function() {
 			"kills": ps.kills,
 			"nickName": ps.name,
 			"life": turret.life
-			}], [turret.x, turret.y]);
+			}], loc);
        }
     }
     moveBullets();
@@ -740,7 +747,7 @@ function createRocks() {
         rockDate = currDate;
     } else {
         if ((currDate - rockDate) > 200 &&
-            Object.keys(Rock.all).length < NUM_ROCKS + Math.floor( /*score = */ 20 / 20)) {
+            Object.keys(Rock.all).length < NUM_ROCKS) {
             var side = Math.floor(Math.random() * 4);
             var startx = 0,
                 starty = 0;
@@ -788,6 +795,7 @@ function moveRocks() {
             rock.x += rock.vx;
             rock.y += rock.vy;
             addCommand(["updateRock", {"id" : rock.id, "x" : rock.x, "y" : rock.y}], [rock.x, rock.y]);
+            debugger;
             for (var idx in PlayerSession.all) {
                 if (PlayerSession.all.hasOwnProperty(idx)) {
                     var ps = PlayerSession.all[idx];
