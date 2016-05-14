@@ -197,6 +197,8 @@
             });
 
             socket.on("rp", function(data) {
+                //alert("deleting " + data["sId"]);
+                //delete PlayerSession.all[data["sId"]];
                 deletePlayerSessionSet[data["sId"]] = 1;
             });
 
@@ -266,14 +268,11 @@
         }
 
         function removePlayer(data) {
-            //alert("removePlayer before " + data);
             var ps = PlayerSession.all[data];
-            //if (ps == null) alert("null ps");
             if (ps != null) {
                 ps.remove();
-                //alert("data : " + data + ", sessionId : " + sessionId);
+                delete deletePlayerSessionSet[data];
                 if (data == sessionId) {
-                    //alert("remove self");
                     socket.disconnect();
                     gameOver = 1;
                     Rock.all = {};
@@ -281,7 +280,6 @@
                     PlayerSession.all = {};
                     unhideForm();
                 }
-                //alert("removing session " + sessionId);
             }
         };
 
@@ -319,6 +317,7 @@
             if (Bullet.all[data] != null) {
                 //alert("remove bullet "  + data);
                 delete Bullet.all[data];
+                delete deleteBulletSet[data];
             }
         };
 
@@ -326,6 +325,7 @@
             //alert("removeRock " + data["id"]);
             if(Rock.all[data] != null) {
                 delete Rock.all[data];
+                delete deleteRockSet[data];
             }
         };
 
@@ -376,7 +376,7 @@
         function removeStuff() {
             for (var key in deleteBulletSet) {
                 removeBullet(key);
-                delete deleteBulletSet[key];
+                //delete deleteBulletSet[key];
             }
             for (var key in Bullet.all) {
                 var bullet = Bullet.all[key];
@@ -388,7 +388,7 @@
             for (var key in deletePlayerSessionSet) {
                 //alert("remove player " + key);
                 removePlayer(key);
-                delete deletePlayerSessionSet[key];
+                //delete deletePlayerSessionSet[key];
             }
 
             for (var key in PlayerSession.all) {
@@ -401,7 +401,7 @@
 
             for (var key in deleteRockSet) {
                 removeRock(key);
-                delete deleteRockSet[key];
+                //delete deleteRockSet[key];
             }
 
             for (var key in Rock.all) {
@@ -420,7 +420,7 @@
             //debug("command : " + command[0]);
             switch (command[0]) {
                 case "removePlayer":
-                    //alert("remove player " + command[1]["sessionId"]);
+                    //alert("remove player abc " + command[1]["sessionId"]);
                     deletePlayerSessionSet[command[1]["sessionId"]] = 1;
                     //removePlayer(command[1]);
                     break;
