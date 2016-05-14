@@ -528,20 +528,20 @@ var t = setInterval(function() {
             scoreQueue.push({"n": ps.name, "s": ps.kills});
             var loc = [turret.x, turret.y];
             addCommand(["tm", {
-		    "sessionId": sId,
+		    "sId": sId,
 			"x": turret.x,
 			"y": turret.y,
-			"color": turret.color,
-			"recoil": turret.recoil,
-			"mousePosX": turret.mousePosX,
-			"mousePosY": turret.mousePosY,
-			"recoilX": turret.recoilX,
-			"recoilY": turret.recoilY,
-			"angle": turret.angle,
-			"timeLeft": 6000 - (new Date().getTime() - turret.date.getTime()),
-			"kills": ps.kills,
-			"nickName": ps.name,
-			"life": turret.life
+			"c": turret.color,
+			"r": turret.recoil,
+			"mpx": turret.mousePosX,
+			"mpy": turret.mousePosY,
+			"rx": turret.recoilX,
+			"ry": turret.recoilY,
+			"a": turret.angle,
+			"tl": 6000 - (new Date().getTime() - turret.date.getTime()),
+			"k": ps.kills,
+			"n": ps.name,
+			"l": turret.life
 			}], loc);
        }
     }

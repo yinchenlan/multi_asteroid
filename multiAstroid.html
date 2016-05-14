@@ -332,25 +332,25 @@
 
         function turretMove(data) {
                 var turretMove = data;
-                var sessId = turretMove["sessionId"];
+                var sessId = turretMove["sId"];
                 var x = turretMove["x"];
                 var y = turretMove["y"];
-                var color = turretMove["color"];
-                var recoil = turretMove["recoil"];
-                var recoilX = turretMove["recoilX"];
-                var recoilY = turretMove["recoilY"];
-                var mousePosX = turretMove["mousePosX"];
-                var mousePosY = turretMove["mousePosY"];
-                var angle = turretMove["angle"];
-                var name = turretMove["nickName"];
+                var color = turretMove["c"];
+                var recoil = turretMove["r"];
+                var recoilX = turretMove["rx"];
+                var recoilY = turretMove["ry"];
+                var mousePosX = turretMove["mpx"];
+                var mousePosY = turretMove["mpy"];
+                var angle = turretMove["a"];
+                var name = turretMove["n"];
                 var ps = PlayerSession.all[sessId];
                 if (ps == null && gameOver == 0) {
                     var turret = new Turret(x, y, color);
                     //alert("creating new player session " + sessId);
-                    ps = new PlayerSession(sessId, turret, turretMove["timeLeft"]);
+                    ps = new PlayerSession(sessId, turret, turretMove["tl"]);
                 }
                 ps.name = name;
-                ps.kills = turretMove["kills"];
+                ps.kills = turretMove["k"];
                 var turret = ps.turret;
                 turret.x = x;
                 turret.y = y;
@@ -361,7 +361,7 @@
                 turret.recoil = recoil;
                 turret.recoilX = recoilX;
                 turret.recoilY = recoilY;
-                turret.life = turretMove["life"];
+                turret.life = turretMove["l"];
         };
 
         function executeCommands(commands) {
