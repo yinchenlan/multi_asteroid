@@ -347,7 +347,7 @@
                 var angle = turretMove["a"];
                 var name = turretMove["n"];
                 var ps = PlayerSession.all[sessId];
-                if (ps == null && gameOver == 0) {
+                if (ps == null) {
                     var turret = new Turret(x, y, color);
                     //alert("creating new player session " + sessId);
                     ps = new PlayerSession(sessId, turret, turretMove["tl"]);
