@@ -262,6 +262,7 @@
 
             socket.on("updateWorld", function(data) {
                 //debug("updateWorld");
+                PlayerSession.all = {};
                 executeCommands(data["updateWorld"]);
                 //drawWorld();
             });
