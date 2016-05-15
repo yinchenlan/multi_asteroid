@@ -199,7 +199,7 @@
             socket.on("rp", function(data) {
                 //alert("deleting " + data["sId"]);
                 //delete PlayerSession.all[data["sId"]];
-                deletePlayerSessionSet[data["sId"]] = 1;
+                //deletePlayerSessionSet[data["sId"]] = 1;
             });
 
             socket.on("gb", function(data) {
@@ -426,7 +426,7 @@
             switch (command[0]) {
                 case "removePlayer":
                     //alert("remove player abc " + command[1]["sessionId"]);
-                    deletePlayerSessionSet[command[1]["sessionId"]] = 1;
+                    //deletePlayerSessionSet[command[1]["sessionId"]] = 1;
                     //removePlayer(command[1]);
                     break;
                 case "damagePlayer":
