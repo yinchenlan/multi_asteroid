@@ -199,7 +199,7 @@
             socket.on("rp", function(data) {
                 //alert("deleting " + data["sId"]);
                 //delete PlayerSession.all[data["sId"]];
-                //deletePlayerSessionSet[data["sId"]] = 1;
+                deletePlayerSessionSet[data["sId"]] = 1;
             });
 
             socket.on("gb", function(data) {
@@ -262,7 +262,9 @@
 
             socket.on("updateWorld", function(data) {
                 //debug("updateWorld");
+                var me = PlayerSession.all[sessionId];
                 PlayerSession.all = {};
+                PlayerSession.all[sessionId] = me;
                 executeCommands(data["updateWorld"]);
                 //drawWorld();
             });
@@ -389,21 +391,21 @@
                 if (x < -100 || x > 900 || y < -100 || y > 700) 
                     bullet.remove();
             }
-            /*
+            
             for (var key in deletePlayerSessionSet) {
                 //alert("remove player " + key);
                 removePlayer(key);
                 //delete deletePlayerSessionSet[key];
             }
-
+            /*
             for (var key in PlayerSession.all) {
 		var ps = PlayerSession.all[key];
 		var x = ps.turret.x + getXOffset();
 		var y = ps.turret.y + getYOffset();
 		if (x < -100 || x> 900 ||y < -100 || y > 700)
                     ps.remove();
-            }
-            */
+            }*/
+            
             for (var key in deleteRockSet) {
                 removeRock(key);
                 //delete deleteRockSet[key];
