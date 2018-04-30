@@ -6,8 +6,9 @@ var app = require('http').createServer(handler),
     scores = [],
     MAX_X = 3200,
     MAX_Y = 2400,
-    NUM_ROCKS = 100,
+    NUM_ROCKS = 10,
     NUM_STARS = 1000,
+    MAX_PLAYERS = 15,
     port = process.env.PORT || 8125,
     starPositions=[],
     bots = {/*playerSessionId : botStateMachine*/};
@@ -512,7 +513,7 @@ var t = setInterval(function() {
     var turretMoves = [];
     var rockMoves = [];
     var bulletMoves = [];
-    if (Object.keys(PlayerSession.all).length < 20) {
+    if (Object.keys(PlayerSession.all).length < MAX_PLAYERS) {
 	createBOT();
     }
     var scoreQueue = [];
