@@ -11,10 +11,11 @@ var app = require('http').createServer(handler),
     MAX_PLAYERS = 15,
     port = process.env.PORT || 8125,
     starPositions=[],
-    bots = {/*playerSessionId : botStateMachine*/};
+    bots = {};
 
 app.listen(port);
 console.log("starting app");
+console.log("port : " + port);
 
 function initializeStarsPositions() {
     for(i = 0; i < NUM_STARS; i++) {
