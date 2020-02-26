@@ -2,13 +2,10 @@
   "name": "multi_astroid",
   "subdomain": "multi_astroid",
   "scripts": {
-    "start": "multiAstroid.js"
+    "start": "node multiAstroid.js"
   },
   "version": "0.1.0-47",
   "dependencies": {
     "socket.io": "*"
-  },
-  "scripts" : {
-  "start" : "node multiAstroid.js"
   }
 }
