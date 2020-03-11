@@ -1,8 +1,8 @@
 {
-  "name": "multi_astroid",
-  "subdomain": "multi_astroid",
+  "name": "multi_asteroid",
+  "subdomain": "multi_asteroid",
   "scripts": {
-    "start": "node multiAstroid.js"
+    "start": "node multiAsteroid.js"
   },
   "version": "0.1.0-47",
   "dependencies": {
