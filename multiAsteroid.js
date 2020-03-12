@@ -30,7 +30,7 @@ function initializeStarsPositions() {
 
 function addCommand(command, pos) {
   //console.log("command : " + command[0]);
-  if (command[0] == "removePlayer")
+  if (command[0] == "rp")
     io.sockets.emit("rp", { sId: command[1]["sessionId"] });
   else {
     for (var k in PlayerSession.all) {
@@ -110,9 +110,6 @@ io.on("connection", function(socket) {
   console.log("connection made for sessionId = " + sessionId);
   createPlayerSession(sessionId, socket);
   socket.emit("stars", { stars: starPositions });
-  //for (var rockId in Rock.all) {
-  //    socket.emit("createRock", Rock.all[rockId].serialize());
-  //}
 
   socket.on("gb", function(data) {
     var id = data["id"];
@@ -123,7 +120,7 @@ io.on("connection", function(socket) {
   socket.on("gr", function(data) {
     var id = data["id"];
     var rock = Rock.all[id];
-    if (rock != null) socket.emit("createRock", rock.serialize());
+    if (rock != null) socket.emit("cr", rock.serialize());
   });
 
   socket.on("wr", function(data) {
@@ -152,7 +149,7 @@ io.on("connection", function(socket) {
     //});
     addCommand(
       [
-        "removePlayer",
+        "rp",
         {
           sessionId: sessionId
         }
@@ -625,7 +622,7 @@ function verifyUpdate(ps) {
   for (var k in ps.commandQueue) {
     var cmd = ps.commandQueue[k];
     //console.log("command " + cmd[0]);
-    if (cmd != null && cmd[0] == "removePlayer" /*&& cmd[1]["sessionId"]*/) {
+    if (cmd != null && cmd[0] == "rp" /*&& cmd[1]["sessionId"]*/) {
       console.log("verified");
       debugger;
       break;
@@ -653,13 +650,9 @@ Bullet.all = {};
 Bullet.prototype = {
   remove: function() {
     delete Bullet.all[this.id];
-    //Bullet.all.splice(Bullet.all.indexOf(this), 1);
-    //io.sockets.emit("removeBullet", {
-    //    "id": this.id
-    //});
     addCommand(
       [
-        "removeBullet",
+        "rb",
         {
           id: this.id
         }
@@ -742,13 +735,9 @@ Rock.id = 0;
 Rock.prototype = {
   remove: function() {
     delete Rock.all[this.id];
-    //Rock.all.splice(Rock.all.indexOf(this), 1);
-    //io.sockets.emit("removeRock", {
-    //    "id": this.id
-    //});
     addCommand(
       [
-        "removeRock",
+        "rmr",
         {
           id: this.id
         }
@@ -765,8 +754,7 @@ Rock.prototype = {
       var coord = [rx, ry];
       this.coords.push(coord);
     }
-    //io.sockets.emit("resizeRock", this.serialize());
-    addCommand(["resizeRock", this.serialize()], [this.x, this.y]);
+    addCommand(["rr", this.serialize()], [this.x, this.y]);
   },
   serialize: function() {
     var retVal = {
@@ -847,8 +835,6 @@ function createRocks() {
         rock.spinDirection = -1;
       }
       rockDate = currDate;
-      //io.sockets.emit("createRock", rock.serialize());
-      //addCommand(["createRock", rock.serialize()], [rock.x, rock.y]);
     }
   }
 }
@@ -861,7 +847,7 @@ function moveRocks() {
       rock.x += rock.vx;
       rock.y += rock.vy;
       addCommand(
-        ["updateRock", { id: rock.id, x: rock.x, y: rock.y }],
+        ["ur", { id: rock.id, x: rock.x, y: rock.y }],
         [rock.x, rock.y]
       );
       debugger;
@@ -891,12 +877,9 @@ function rockCollideTurret(rock, ps) {
   if (distance(ps.turret.x, ps.turret.y, rock.x, rock.y) <= 5 + rock.r) {
     var damage = rock.r;
     if (ps.turret.life - damage <= 0) {
-      //io.sockets.emit("removePlayer", {
-      //    "sessionId": ps.sessionId
-      //});
       addCommand(
         [
-          "removePlayer",
+          "rp",
           {
             sessionId: ps.sessionId
           }
@@ -944,7 +927,7 @@ function bulletCollideTurret(bullet) {
           if (ps != null) {
             addCommand(
               [
-                "removePlayer",
+                "rp",
                 {
                   sessionId: ps.sessionId
                 }
@@ -993,7 +976,7 @@ function turretCollideTurret(turret) {
           if (shooterSession != null) shooterSession.kills += 1;
           addCommand(
             [
-              "removePlayer",
+              "rp",
               {
                 sessionId: ps.sessionId
               }
@@ -1021,7 +1004,7 @@ function turretCollideTurret(turret) {
           ps.kills += 1;
           addCommand(
             [
-              "removePlayer",
+              "rp",
               {
                 sessionId: playerSession.sessionId
               }
@@ -1086,7 +1069,7 @@ function moveBullets() {
       bullet.y += bullet.vy;
       //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
       addCommand(
-        ["updateBullet", { id: bullet.id, x: bullet.x, y: bullet.y }],
+        ["ub", { id: bullet.id, x: bullet.x, y: bullet.y }],
         [bullet.x, bullet.y]
       );
       //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
@@ -1122,7 +1105,7 @@ function createBullets(sessionId) {
     bullet.vy = speed * Math.sin(turret.angle);
     turret.recoil = 5;
     ps.mouseDate = now;
-    addCommand(["createBullet", bullet.serialize()], [bullet.x, bullet.y]);
+    addCommand(["cb", bullet.serialize()], [bullet.x, bullet.y]);
   }
 }
 

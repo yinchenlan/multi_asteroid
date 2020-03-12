@@ -21,7 +21,6 @@
         <tr>
             <td>
                 <canvas id="gameCanvas"></canvas>
-                <audio id="laser" src="laser.wav" style="display: none;"></audio>
                 <form name = "nameForm" action="#"> 
                 <font color="blue">Enter Name: </font><input type="text" name="nickName">
                 <input type="submit" value="Start" onclick="socket = connect(); updateSocket(); setNickName(); hideForm(); return false;">
@@ -176,9 +175,6 @@
             return rv;
         }
 
-        var laser = document.getElementById("laser");
-
-
         function connect() {
             gameOver = 0;
             return io.connect(location.hostname + ':' + location.port, 
@@ -314,8 +310,6 @@
             var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
             bullet.vx = data["vx"];
             bullet.vy = data["vy"];
-            //laser.play();
-
         };
 
         function removeBullet(data) {
@@ -418,46 +412,39 @@
                 if (x < -100 || x> 900 ||y < -100 || y > 700) 
                     rock.remove();
             }
-
-            //Bullet.removeDeadBullets();
         }
 
         function executeCommand(command) {
             //if (command[0] == "removePlayer") alert ("remove " + command[1]["sessionId"]);
             //debug("command : " + command[0]);
             switch (command[0]) {
-                case "removePlayer":
-                    //alert("remove player abc " + command[1]["sessionId"]);
-                    //deletePlayerSessionSet[command[1]["sessionId"]] = 1;
-                    //removePlayer(command[1]);
+                case "rp":
                     break;
                 case "damagePlayer":
                     damagePlayer(command[1]);
                     break;
-                case "createRock":
+                case "cr":
                     createRock(command[1]);
                     break;
-                case "resizeRock":
+                case "rr":
                     resizeRock(command[1]);
                     break;
-                case "createBullet":
+                case "cb":
                     createBullet(command[1]);
                     break;
-                case "removeBullet":
+                case "rb":
                     deleteBulletSet[command[1]["id"]] = 1;
-                    //removeBullet(command[1]);
                     break;
-                case "removeRock":
+                case "rmr":
                     deleteRockSet[command[1]["id"]] = 1;
-                    //removeRock(command[1]);
                     break;
                 case "tm":
                     turretMove(command[1]);
                     break;
-                case "updateRock":
+                case "ur":
                     Rock.moveRock(command[1]);
                     break;
-                case "updateBullet":
+                case "ub":
                     Bullet.moveBullet(command[1]);
                     break;
             }
@@ -960,22 +947,6 @@
                 bullet.x = data["x"];
                 bullet.y = data["y"];
             }
-        };
-      
-        Bullet.removeDeadBullets = function() {
-            for (var i in Bullet.all) {
-                if (Bullet.all.hasOwnProperty(i)) {
-                    var bullet = Bullet.all[i];
-                    if (bullet.x === bullet.px && bullet.y === bullet.py) {
-                        //alert("dead bullet " + bullet.id);
-                        delete Bullet.all[i];
-                    } else if (bullet.x != bullet.px || bullet.y != bullet.py) {
-                        bullet.px = bullet.x;
-                        bullet.py = bullet.y;
-                        //alert("updating px,py");
-                    } 
-                }
-            }  
         };
 
         function Coord(x, y) {
