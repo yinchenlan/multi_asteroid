@@ -7,6 +7,7 @@ var app = require("http").createServer(handler),
   url = require("url"),
   util = require("util"),
   scores = [],
+  FPS = 60,
   MAX_X = 3200,
   MAX_Y = 2400,
   NUM_ROCKS = 50,
@@ -604,7 +605,7 @@ var t = setInterval(function() {
     io.sockets.emit("lb", { ss: scoreQueue });
     lastPushTime = now;
   }
-}, 1000 / 30);
+}, 1000 / FPS);
 
 function emitWorld() {
   for (var k in PlayerSession.all) {
