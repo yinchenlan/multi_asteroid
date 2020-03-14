@@ -670,7 +670,7 @@
 		  //if (!isYou)alert("got here");
             if (isGhost) {
                 ctx.save();
-                ctx.font = "8pt Courier New";
+                ctx.font = "6pt Courier New";
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .5;
                 ctx.fillText(ps.getTimeLeft(), getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
@@ -684,7 +684,7 @@
                 ctx.restore();
             } else {
                 ctx.save();
-                ctx.font = "8pt Courier New";
+                ctx.font = "6pt Courier New";
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .8;
                 ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
@@ -698,7 +698,7 @@
             var ps = PlayerSession.all[sessionId];
             if (ps != null) {
                 ctx.save();
-                ctx.font = "8pt Courier New";
+                ctx.font = "6pt Courier New";
                 ctx.fillStyle = "yellow";
                 var x = PlayerSession.all[sessionId].turret.x;
                 var y = PlayerSession.all[sessionId].turret.y;
@@ -710,7 +710,7 @@
         
         function drawNumPlayers() {
             ctx.save();
-            ctx.font = "8pt Courier New";
+            ctx.font = "6pt Courier New";
             ctx.fillStyle = "white";
             ctx.fillText("# Players: " + Object.keys(PlayerSession.all).length, 600, 25);
             ctx.restore();
@@ -718,7 +718,7 @@
 
         function drawScore() {
             ctx.save();
-            ctx.font = "8pt Courier New";
+            ctx.font = "6pt Courier New";
             ctx.fillStyle = "white";
             ctx.fillText("" + score + " destroyed", 10, 480);
             ctx.restore();
@@ -726,7 +726,7 @@
 
         function drawHelp() {
             ctx.save();
-            ctx.font = "8pt Courier New";
+            ctx.font = "6pt Courier New";
             ctx.fillStyle = "greenyellow";
             ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", canvas.width/2/scale - 200, 25);
             ctx.restore();
@@ -844,7 +844,7 @@
         function debug(info) {
             //alert(info);
             ctx.save();
-            ctx.font = "8pt Courier New";
+            ctx.font = "6pt Courier New";
             ctx.fillStyle = "yellow";
             ctx.fillText("Debug: " + info, 10, 50);
             ctx.restore();
