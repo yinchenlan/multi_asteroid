@@ -160,7 +160,7 @@ io.on("connection", function(socket) {
     //console.log("remove player 1 " + sessionId);
   });
 
-  socket.on("moveStart", function(data) {
+  socket.on("ms", function(data) {
     //console.log("moving player start");
     var sessionId = data["sessionId"];
     var hor = data["hor"];
@@ -172,7 +172,7 @@ io.on("connection", function(socket) {
     turret.ver = ver;
   });
 
-  socket.on("moveEnd", function(data) {
+  socket.on("me", function(data) {
     //console.log("moving player end");
     var sessionId = data["sessionId"];
     var ps = PlayerSession.all[socket.id];
@@ -182,7 +182,7 @@ io.on("connection", function(socket) {
     turret.ver = 0;
   });
 
-  socket.on("mousePos", function(data) {
+  socket.on("mp", function(data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     var turret = ps.turret;
@@ -625,7 +625,6 @@ function verifyUpdate(ps) {
     //console.log("command " + cmd[0]);
     if (cmd != null && cmd[0] == "rp" /*&& cmd[1]["sessionId"]*/) {
       console.log("verified");
-      debugger;
       break;
     }
   }
@@ -851,7 +850,6 @@ function moveRocks() {
         ["ur", { id: rock.id, x: rock.x, y: rock.y }],
         [rock.x, rock.y]
       );
-      debugger;
       for (var idx in PlayerSession.all) {
         if (PlayerSession.all.hasOwnProperty(idx)) {
           var ps = PlayerSession.all[idx];

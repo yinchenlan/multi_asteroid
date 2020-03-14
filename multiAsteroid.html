@@ -114,7 +114,7 @@
                 var turret = ps.turret;
                 turret.mousePosX = (-getXOffset() + evt.clientX / scale - left + window.pageXOffset);
                 turret.mousePosY = (-getYOffset() + evt.clientY / scale - top + window.pageYOffset);
-                socket.emit("mousePos", {
+                socket.emit("mp", {
                     "mousePosX": turret.mousePosX,
                     "mousePosY": turret.mousePosY
                 });
@@ -240,7 +240,7 @@
 
             });
 
-            socket.on("createRock", function(data) {
+            socket.on("cr", function(data) {
                 var rock = Rock.deserialize(data);
                 Rock.all[rock.id] = rock;
             });
@@ -535,7 +535,7 @@
             //    ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
             //}
             if (socket != null)
-                socket.emit("moveStart", {
+                socket.emit("ms", {
                     "sessionId": sessionId,
                     "hor": hor,
                     "ver": ver
@@ -568,7 +568,7 @@
             //if (event.preventDefault) { event.preventDefault(); }
             //if (event.stopPropagation) { event.stopPropagation(); }
             if (socket != null) 
-                socket.emit("moveEnd", {
+                socket.emit("me", {
                     "sessionId": sessionId
                 }); 
             //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
