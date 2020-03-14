@@ -94,7 +94,11 @@ function createBOTName(playerSession) {
 
       // The whole response has been received. Print out the result.
       resp.on("end", () => {
-        playerSession.name = JSON.parse(data)[0];
+        try {
+          playerSession.name = JSON.parse(data)[0];
+        } catch (e) {
+          playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+        }
       });
     })
     .on("error", err => {
