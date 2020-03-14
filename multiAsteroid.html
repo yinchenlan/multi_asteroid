@@ -759,12 +759,12 @@
 
         function drawScores() {
             ctx.save();
-            ctx.font = "8pt Calibri";
+            ctx.font = "6pt Calibri";
             ctx.fillStyle = "#6495ED";
-            ctx.fillText("Leader Board : ", canvas.width/scale - 120, 50);
+            ctx.fillText("Leader Board : ", canvas.width/scale - 130, 50);
             ctx.restore();
             ctx.save();
-            ctx.font = "8pt Calibri";
+            ctx.font = "6pt Calibri";
             ctx.fillStyle = "green";
             var inc = 20;
             //debug("scores " + scores);
@@ -773,7 +773,7 @@
             for (var idx in scores) {
                 if (cnt++ > 9) break;
                 var sc = scores[idx];
-                ctx.fillText("" + sc["n"] + " : " + sc["s"], canvas.width/scale - 120, 50 + inc);
+                ctx.fillText("" + sc["n"] + " : " + sc["s"], canvas.width/scale - 130, 50 + inc);
                 inc += 20;
             }
             ctx.restore();

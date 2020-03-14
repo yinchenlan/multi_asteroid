@@ -84,7 +84,7 @@ function createBOT() {
 
 function createBOTName(playerSession) {
   http
-    .get("http://names.drycodes.com/1", resp => {
+    .get("http://names.drycodes.com/1?nameOptions=starwarsCharacters", resp => {
       let data = "";
 
       // A chunk of data has been recieved.
