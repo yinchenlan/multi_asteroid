@@ -3,6 +3,7 @@ var app = require("http").createServer(handler),
     pingTimeout: 4000,
     pingInterval: 1000
   }),
+  http = require("http"),
   fs = require("fs"),
   url = require("url"),
   util = require("util"),
@@ -78,7 +79,27 @@ function createBOT() {
     id
   );
   var playerSession = new PlayerSession(id, turret, 1, null);
-  playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+  createBOTName(playerSession);
+}
+
+function createBOTName(playerSession) {
+  http
+    .get("http://names.drycodes.com/1", resp => {
+      let data = "";
+
+      // A chunk of data has been recieved.
+      resp.on("data", chunk => {
+        data += chunk;
+      });
+
+      // The whole response has been received. Print out the result.
+      resp.on("end", () => {
+        playerSession.name = JSON.parse(data)[0];
+      });
+    })
+    .on("error", err => {
+      playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+    });
 }
 
 function createPlayerBOTSession(id, socket) {
@@ -88,7 +109,8 @@ function createPlayerBOTSession(id, socket) {
     id
   );
   var playerSession = new PlayerSession(id, turret, 1, socket);
-  playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+  createBOTName(playerSession);
+  //playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
   if (socket != null) {
     socket.emit("connected", {
       sessionId: id,
