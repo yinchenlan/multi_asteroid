@@ -12,6 +12,7 @@ var app = require("http").createServer(handler),
   MAX_Y = 2400,
   NUM_ROCKS = 50,
   NUM_STARS = 1000,
+  BULLET_DISTANCE = 300,
   MAX_PLAYERS = 15,
   port = process.env.PORT || 8125,
   starPositions = [],
@@ -195,13 +196,13 @@ io.on("connection", function(socket) {
     console.log("Server Log :" + log);
   });
 
-  socket.on("mouseDown", function(data) {
+  socket.on("md", function(data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 1;
   });
 
-  socket.on("mouseUp", function(data) {
+  socket.on("mu", function(data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 0;
@@ -385,7 +386,6 @@ BSM.prototype = {
     var angle = Math.atan2(this.currVy, this.currVx);
     this.aheadX = x + Math.cos(angle) * this.aheadDist;
     this.aheadY = y + Math.sin(angle) * this.aheadDist;
-    //console.log("aheadX " + this.aheadX + ", aheadY " + this.aheadY);
     this.shortAheadX = x + Math.cos(angle) * 10;
     this.shortAheadY = y + Math.sin(angle) * 10;
   }
@@ -424,12 +424,6 @@ PlayerSession.prototype = {
     if (now - this.date < 6000) {
       return true;
     } else {
-      //io.sockets.emit("matureSession", {
-      //    "sessionId": this.sessionId
-      //});
-      // addCommand(["matureSession", {
-      //    "sessionId": this.sessionId
-      //	    }], [this.turret.x, this.turret.y]);
       return false;
     }
   },
@@ -632,6 +626,8 @@ function verifyUpdate(ps) {
 
 // Constructor
 function Bullet(x, y, r, color, sessionId) {
+  this.ox = x;
+  this.oy = y;
   this.x = x;
   this.y = y;
   this.r = r;
@@ -859,6 +855,7 @@ function moveRocks() {
           rockCollideTurret(rock, ps);
         }
       }
+      rockCollideRock(rock);
       if (
         rock.x <= 0 ||
         rock.y <= 0 ||
@@ -1053,6 +1050,33 @@ function bulletCollideRock(bullet) {
   }
 }
 
+function rockCollideRock(rock) {
+  for (var idx in Rock.all) {
+    var r = Rock.all[idx];
+    if (rock.id == r.id) {
+      continue;
+    }
+    if (distance(rock.x, rock.y, r.x, r.y) <= rock.r + r.r) {
+      var diff = Math.abs(rock.r - r.r);
+      if (diff < 20) {
+        r.remove();
+        rock.remove();
+      } else {
+        if (rock.r > r.r) {
+          rock.r = rock.r - r.r;
+          rock.resize();
+          r.remove();
+        } else {
+          r.r = r.r - rock.r;
+          r.resize();
+          rock.remove();
+        }
+      }
+      break;
+    }
+  }
+}
+
 function distance(x1, y1, x2, y2) {
   var diffx = x2 - x1;
   var diffy = y2 - y1;
@@ -1064,6 +1088,11 @@ function moveBullets() {
     if (Bullet.all.hasOwnProperty(k)) {
       var bullet = Bullet.all[k];
       if (bullet == null) continue;
+      if (
+        distance(bullet.x, bullet.y, bullet.ox, bullet.oy) > BULLET_DISTANCE
+      ) {
+        bullet.remove();
+      }
       bullet.x += bullet.vx;
       bullet.y += bullet.vy;
       //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);

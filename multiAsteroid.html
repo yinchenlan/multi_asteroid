@@ -1058,12 +1058,12 @@
             if (gamePaused == 1 || gameOver == 1) return;
             mouseDown = 1;
             if (socket != null)
-                socket.emit("mouseDown");
+                socket.emit("md");
         }, false);
         canvas.addEventListener('mouseup', function(evt) {
             mouseDown = 0;
             if (socket != null)
-                socket.emit("mouseUp");
+                socket.emit("mu");
         }, false);
         canvas.onselectstart = function() {
             return false;
