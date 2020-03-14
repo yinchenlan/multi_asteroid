@@ -16,14 +16,14 @@
 </head>
 <script src="/socket.io/socket.io.js"></script>
 
-<body style="background-color:lightgrey;">
+<body style="background-color:lightgrey;" onload="showBOTPlaying(); return false;">
     <table>
         <tr>
             <td>
                 <canvas id="gameCanvas"></canvas>
                 <form name = "nameForm" action="#"> 
                 <font color="blue">Enter Name: </font><input type="text" name="nickName">
-                <input type="submit" value="Start" onclick="socket = connect(); updateSocket(); setNickName(); hideForm(); return false;">
+                <input type="submit" value="Start" onclick="socket = connect(); createPlayerSession(); updateSocket(); setNickName(); hideForm(); return false;">
                 </form> 
             </td>
         </tr>
@@ -39,24 +39,30 @@
             });
         }
 
+        function showBOTPlaying() {
+            socket = connect(); 
+            createBOTSession(); 
+            updateSocket(); 
+        }
+
         function initialize() {
-	    // Register an event listener to
-	    // call the resizeCanvas() function each time 
-	    // the window is resized.
-	    window.addEventListener('resize', resizeCanvas, false);
-	
-	    // Draw canvas border for the first time.
-	    resizeCanvas();
-            //alert("resized");
-	}
+            // Register an event listener to
+            // call the resizeCanvas() function each time 
+            // the window is resized.
+            window.addEventListener('resize', resizeCanvas, false);
+        
+            // Draw canvas border for the first time.
+            resizeCanvas();
+                //alert("resized");
+	    }
 
         function resizeCanvas() {
-	    canvas.width = window.innerWidth - 10;
-	    canvas.height = window.innerHeight - 30;
-            updateScale();
-            if (socket != null)
-                socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
-	}
+            canvas.width = window.innerWidth - 10;
+            canvas.height = window.innerHeight - 30;
+                updateScale();
+                if (socket != null)
+                    socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
+        }
         
         function setNickName() {
             nickName = document.nameForm.nickName.value;
@@ -181,13 +187,20 @@
             {transports: ['websocket']});
         }
 
+        function createPlayerSession() {
+            socket.emit("cps");
+        }
+
+        function createBOTSession() {
+            socket.emit("cbs");
+        }
+
         function updateSocket() {
             socket.on("connected", function(data) {
                 var turret = new Turret(data["x"], data["y"], data["color"]);
                 turret.life = data["life"];
                 sessionId = data["sessionId"];
                 var ps = new PlayerSession(sessionId, turret, data["timeLeft"]);
-                //alert("Creating player session " + sessionId);
                 setNickNameToPlayerSession();
                 socket.emit("wr", {"sId": sessionId, "s": scale, "w": canvas.width, "h": canvas.height});
             });
@@ -256,7 +269,7 @@
                 endscoresend = 1;
             });
 
-            socket.on("updateWorld", function(data) {
+            socket.on("uw", function(data) {
                 //debug("updateWorld");
                 var me = PlayerSession.all[sessionId];
                 PlayerSession.all = {};
@@ -280,7 +293,8 @@
                     deletePlayerSessionSet = {};
                     deleteRockSet = {};
                     deleteBulletSet = {};
-                    unhideForm();
+                    showBOTPlaying();
+                    //unhideForm();
                 }
             }
         };

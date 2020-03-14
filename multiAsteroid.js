@@ -38,11 +38,10 @@ function addCommand(command, pos) {
     for (var k in PlayerSession.all) {
       if (PlayerSession.all.hasOwnProperty(k)) {
         var ps = PlayerSession.all[k];
-        if (ps.isBot == 0)
-          if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) === 1)) {
-            //console.log("loc " + ps.turret.x + ", " + ps.turret.y);
-            ps.pushCommand(command);
-          }
+        if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) === 1)) {
+          //console.log("loc " + ps.turret.x + ", " + ps.turret.y);
+          ps.pushCommand(command);
+        }
       }
     }
   }
@@ -82,6 +81,30 @@ function createBOT() {
   playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
 }
 
+function createPlayerBOTSession(id, socket) {
+  var turret = new Turret(
+    Math.round(Math.random() * (MAX_X - 40)) + 20,
+    Math.round(Math.random() * (MAX_Y - 40)) + 20,
+    id
+  );
+  var playerSession = new PlayerSession(id, turret, 1, socket);
+  playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+  if (socket != null) {
+    socket.emit("connected", {
+      sessionId: id,
+      x: turret.x,
+      y: turret.y,
+      color: turret.color,
+      isNew: false,
+      timeLeft: 0,
+      life: turret.life,
+      MAX_X: MAX_X,
+      MAX_Y: MAX_Y
+    });
+  }
+  return playerSession;
+}
+
 function createPlayerSession(id, socket) {
   var turret = new Turret(
     Math.round(Math.random() * (MAX_X - 40)) + 20,
@@ -110,8 +133,18 @@ io.on("connection", function(socket) {
   console.log(socket.handshake.address);
   var sessionId = socket.id;
   console.log("connection made for sessionId = " + sessionId);
-  createPlayerSession(sessionId, socket);
+  //createPlayerSession(sessionId, socket);
   socket.emit("stars", { stars: starPositions });
+
+  socket.on("cps", function(data) {
+    var sessionId = socket.id;
+    createPlayerSession(sessionId, socket);
+  });
+
+  socket.on("cbs", function(data) {
+    var sessionId = socket.id;
+    createPlayerBOTSession(sessionId, socket);
+  });
 
   socket.on("gb", function(data) {
     var id = data["id"];
@@ -431,8 +464,12 @@ PlayerSession.prototype = {
     this.wander();
     this.avoid();
     var angle = Math.atan2(this.bsm.currVy, this.bsm.currVx);
-    this.turret.x = this.turret.x + this.turret.speed * Math.cos(angle);
-    this.turret.y = this.turret.y + this.turret.speed * Math.sin(angle);
+    this.turret.x = Math.round(
+      this.turret.x + this.turret.speed * Math.cos(angle)
+    );
+    this.turret.y = Math.round(
+      this.turret.y + this.turret.speed * Math.sin(angle)
+    );
     var recoilAngle = this.turret.angle + Math.PI;
     this.turret.recoilX = Math.round(
       this.turret.x + this.turret.recoil * Math.cos(recoilAngle)
@@ -492,7 +529,7 @@ PlayerSession.prototype = {
     if (this.commandQueue.length == 0) return;
     if (this.socket != null) {
       //console.log("sendUpdate");
-      this.socket.emit("updateWorld", { updateWorld: this.commandQueue });
+      this.socket.emit("uw", { updateWorld: this.commandQueue });
       this.commandQueue = [];
     }
   },
