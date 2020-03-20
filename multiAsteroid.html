@@ -140,7 +140,7 @@
         //var unsortedScores = [];
         var socket = null;
         var sessionId = null;
-        var transparency = 0.4;
+        var transparency = 0.6;
         var starsPositions = [];
         var nickName = "";
         var deleteRockSet = {};
@@ -605,7 +605,11 @@
             // Draw base
             ctx.save();
             ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
-            ctx.fillStyle = turret.color;
+            //ctx.fillStyle = turret.color;
+            var gradient = ctx.createRadialGradient(0, 0, turret.baseRadius * turret.life / 100, 0, 0, 0);
+            gradient.addColorStop(1, "black");
+            gradient.addColorStop(0, turret.color);
+            ctx.fillStyle = gradient;
             ctx.strokeStyle = "black";
             if (!isYou)
                 ctx.globalAlpha = transparency;
@@ -670,7 +674,7 @@
 		  //if (!isYou)alert("got here");
             if (isGhost) {
                 ctx.save();
-                ctx.font = "6pt Courier New";
+                ctx.font = "4pt Courier New";
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .5;
                 ctx.fillText(ps.getTimeLeft(), getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
@@ -684,11 +688,11 @@
                 ctx.restore();
             } else {
                 ctx.save();
-                ctx.font = "6pt Courier New";
+                ctx.font = "4pt Courier New";
                 ctx.fillStyle = "white";
                 ctx.globalAlpha = .8;
                 ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
-                ctx.fillText("score: " + ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
+                ctx.fillText(ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
                 ctx.restore();
             }
         }
