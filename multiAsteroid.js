@@ -1,8 +1,6 @@
 var app = require("http").createServer(handler),
-  io = require("socket.io").listen(app, {
-    pingTimeout: 4000,
-    pingInterval: 1000
-  }),
+  io = require("socket.io")(app, {
+      wsEngine: require("eiows").Server}),
   http = require("http"),
   fs = require("fs"),
   url = require("url"),
