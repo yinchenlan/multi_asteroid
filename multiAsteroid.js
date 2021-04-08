@@ -551,7 +551,7 @@ PlayerSession.prototype = {
   pushCommand: function(cmd) {
     this.commandQueue.push(cmd);
   },
-  sendUpdate: async function() {
+  sendUpdate: function() {
     if (this.commandQueue.length == 0) return;
     if (this.socket != null) {
       //console.log("sendUpdate");
