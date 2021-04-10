@@ -1,6 +1,7 @@
 var app = require("http").createServer(handler),
   io = require("socket.io")(app, {
-      wsEngine: require("eiows").Server}),
+    wsEngine: require("eiows").Server,
+  }),
   http = require("http"),
   fs = require("fs"),
   url = require("url"),
@@ -55,14 +56,14 @@ function handler(req, res) {
     res.writeHead(200, { "Content-Type": "audio/vnd.wav" });
     res.end(sound, "binary");
   } else {
-    fs.readFile("multiAsteroid.html", "utf-8", function(err, data) {
+    fs.readFile("multiAsteroid.html", "utf-8", function (err, data) {
       if (err) {
         res.writeHead(500);
         return res.end("Error loading game!");
       }
 
       res.writeHead(200, {
-        "Content-Type": "text/html"
+        "Content-Type": "text/html",
       });
       res.end(data);
     });
@@ -82,24 +83,27 @@ function createBOT() {
 
 function createBOTName(playerSession) {
   http
-    .get("http://names.drycodes.com/1?nameOptions=starwarsCharacters", resp => {
-      let data = "";
+    .get(
+      "http://names.drycodes.com/1?nameOptions=starwarsCharacters",
+      (resp) => {
+        let data = "";
 
-      // A chunk of data has been recieved.
-      resp.on("data", chunk => {
-        data += chunk;
-      });
+        // A chunk of data has been recieved.
+        resp.on("data", (chunk) => {
+          data += chunk;
+        });
 
-      // The whole response has been received. Print out the result.
-      resp.on("end", () => {
-        try {
-          playerSession.name = JSON.parse(data)[0];
-        } catch (e) {
-          playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
-        }
-      });
-    })
-    .on("error", err => {
+        // The whole response has been received. Print out the result.
+        resp.on("end", () => {
+          try {
+            playerSession.name = JSON.parse(data)[0];
+          } catch (e) {
+            playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
+          }
+        });
+      }
+    )
+    .on("error", (err) => {
       playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
     });
 }
@@ -123,7 +127,7 @@ function createPlayerBOTSession(id, socket) {
       timeLeft: 0,
       life: turret.life,
       MAX_X: MAX_X,
-      MAX_Y: MAX_Y
+      MAX_Y: MAX_Y,
     });
   }
   return playerSession;
@@ -147,42 +151,42 @@ function createPlayerSession(id, socket) {
       timeLeft: 6000 - (new Date().getTime() - turret.date.getTime()),
       life: turret.life,
       MAX_X: MAX_X,
-      MAX_Y: MAX_Y
+      MAX_Y: MAX_Y,
     });
   }
   return playerSession;
 }
 
-io.on("connection", function(socket) {
+io.on("connection", function (socket) {
   console.log(socket.handshake.address);
   var sessionId = socket.id;
   console.log("connection made for sessionId = " + sessionId);
   //createPlayerSession(sessionId, socket);
   socket.emit("stars", { stars: starPositions });
 
-  socket.on("cps", function(data) {
+  socket.on("cps", function (data) {
     var sessionId = socket.id;
     createPlayerSession(sessionId, socket);
   });
 
-  socket.on("cbs", function(data) {
+  socket.on("cbs", function (data) {
     var sessionId = socket.id;
     createPlayerBOTSession(sessionId, socket);
   });
 
-  socket.on("gb", function(data) {
+  socket.on("gb", function (data) {
     var id = data["id"];
     var bullet = Bullet.all[id];
     if (bullet != null) socket.emit("gb", bullet.serialize());
   });
 
-  socket.on("gr", function(data) {
+  socket.on("gr", function (data) {
     var id = data["id"];
     var rock = Rock.all[id];
     if (rock != null) socket.emit("cr", rock.serialize());
   });
 
-  socket.on("wr", function(data) {
+  socket.on("wr", function (data) {
     var sessId = data["sId"];
     var scale = data["s"];
     var width = data["w"];
@@ -195,7 +199,7 @@ io.on("connection", function(socket) {
     }
   });
 
-  socket.on("disconnect", function(data) {
+  socket.on("disconnect", function (data) {
     console.log("disconnect : " + data);
     var sessionId = socket.id;
     var playerSession = PlayerSession.all[sessionId];
@@ -210,15 +214,15 @@ io.on("connection", function(socket) {
       [
         "rp",
         {
-          sessionId: sessionId
-        }
+          sessionId: sessionId,
+        },
       ],
       [playerSession.turret.x, playerSession.turret.y]
     );
     //console.log("remove player 1 " + sessionId);
   });
 
-  socket.on("ms", function(data) {
+  socket.on("ms", function (data) {
     //console.log("moving player start");
     var sessionId = data["sessionId"];
     var hor = data["hor"];
@@ -230,7 +234,7 @@ io.on("connection", function(socket) {
     turret.ver = ver;
   });
 
-  socket.on("me", function(data) {
+  socket.on("me", function (data) {
     //console.log("moving player end");
     var sessionId = data["sessionId"];
     var ps = PlayerSession.all[socket.id];
@@ -240,7 +244,7 @@ io.on("connection", function(socket) {
     turret.ver = 0;
   });
 
-  socket.on("mp", function(data) {
+  socket.on("mp", function (data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     var turret = ps.turret;
@@ -248,24 +252,24 @@ io.on("connection", function(socket) {
     turret.mousePosY = data["mousePosY"];
   });
 
-  socket.on("serverLog", function(data) {
+  socket.on("serverLog", function (data) {
     var log = data["log"];
     console.log("Server Log :" + log);
   });
 
-  socket.on("md", function(data) {
+  socket.on("md", function (data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 1;
   });
 
-  socket.on("mu", function(data) {
+  socket.on("mu", function (data) {
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 0;
   });
 
-  socket.on("nickName", function(data) {
+  socket.on("nickName", function (data) {
     console.log("nickName ");
     var ps = PlayerSession.all[socket.id];
     if (ps == null) return;
@@ -296,7 +300,7 @@ function Turret(x, y, sessionId) {
 }
 
 Turret.prototype = {
-  move: function() {
+  move: function () {
     var turretx = this.x;
     var turrety = this.y;
     if (this.hor != 0 && this.ver != 0) {
@@ -342,7 +346,7 @@ Turret.prototype = {
       this.recoil -= 1;
     }
     turretCollideTurret(this);
-  }
+  },
 };
 
 var turretColors = [
@@ -352,7 +356,7 @@ var turretColors = [
   "purple",
   "yellow",
   "green",
-  "pink"
+  "pink",
 ];
 
 var currColorIdx = 0;
@@ -379,7 +383,7 @@ function BSM() {
 }
 
 BSM.prototype = {
-  getMostThreateningObstacle: function(sessionId) {
+  getMostThreateningObstacle: function (sessionId) {
     var x = 0;
     var y = 0;
     var currMin = 1000000;
@@ -436,16 +440,16 @@ BSM.prototype = {
     if (currMin < 10000) return [x, y];
     else return null;
   },
-  getDistance: function(x1, y1, x2, y2) {
+  getDistance: function (x1, y1, x2, y2) {
     return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
   },
-  calculateAheadVector: function(x, y) {
+  calculateAheadVector: function (x, y) {
     var angle = Math.atan2(this.currVy, this.currVx);
     this.aheadX = x + Math.cos(angle) * this.aheadDist;
     this.aheadY = y + Math.sin(angle) * this.aheadDist;
     this.shortAheadX = x + Math.cos(angle) * 10;
     this.shortAheadY = y + Math.sin(angle) * 10;
-  }
+  },
 };
 
 function PlayerSession(sessionId, turret, isBot, socket) {
@@ -473,10 +477,10 @@ function PlayerSession(sessionId, turret, isBot, socket) {
 PlayerSession.all = {};
 
 PlayerSession.prototype = {
-  remove: function() {
+  remove: function () {
     delete PlayerSession.all[this.sessionId];
   },
-  isNew: function() {
+  isNew: function () {
     var now = new Date();
     if (now - this.date < 6000) {
       return true;
@@ -484,7 +488,7 @@ PlayerSession.prototype = {
       return false;
     }
   },
-  tick: function() {
+  tick: function () {
     this.wander();
     this.avoid();
     var angle = Math.atan2(this.bsm.currVy, this.bsm.currVx);
@@ -508,7 +512,7 @@ PlayerSession.prototype = {
     this.turret.mousePosY = this.bsm.destY;
     turretCollideTurret(this.turret);
   },
-  wander: function() {
+  wander: function () {
     var now = new Date();
     if (now - this.bsm.lastTicked > this.bsm.tickFreq) {
       this.bsm.destX = Math.round(Math.random() * MAX_X);
@@ -527,7 +531,7 @@ PlayerSession.prototype = {
     this.bsm.currVy = this.bsm.currVy + dVy;
     this.turret.angle = angle;
   },
-  avoid: function() {
+  avoid: function () {
     this.bsm.calculateAheadVector(this.turret.x, this.turret.y);
     var pos = this.bsm.getMostThreateningObstacle(this.turret.sessionId);
     if (pos != null) {
@@ -546,10 +550,10 @@ PlayerSession.prototype = {
       this.mouseDown = 0;
     }
   },
-  pushCommand: function(cmd) {
+  pushCommand: function (cmd) {
     this.commandQueue.push(cmd);
   },
-  sendUpdate: async function() {
+  sendUpdate: function () {
     if (this.commandQueue.length == 0) return;
     if (this.socket != null) {
       //console.log("sendUpdate");
@@ -557,7 +561,7 @@ PlayerSession.prototype = {
       this.commandQueue = [];
     }
   },
-  isVisibleTo: function(pos) {
+  isVisibleTo: function (pos) {
     //return 1;
     if (pos == null || pos.length != 2) return 0;
     var xos = this.getXOffset();
@@ -577,7 +581,7 @@ PlayerSession.prototype = {
     //console.log("here 2");
     return 0;
   },
-  getXOffset: function() {
+  getXOffset: function () {
     //console.log("here");
     var negX = -1 * this.turret.x;
     var offset = negX + this.canvasWidth / 2 / this.scale;
@@ -589,7 +593,7 @@ PlayerSession.prototype = {
     //console.log("here");
     return offset;
   },
-  getYOffset: function() {
+  getYOffset: function () {
     var negY = -1 * this.turret.y;
     var offset = negY + this.canvasHeight / 2 / this.scale;
     if (this.turret.y < this.canvasHeight / 2 / this.scale) {
@@ -598,7 +602,7 @@ PlayerSession.prototype = {
       return -(MAX_Y - this.canvasHeight / this.scale);
     }
     return offset;
-  }
+  },
 };
 
 initializeStarsPositions();
@@ -606,7 +610,7 @@ initializeStarsPositions();
 var lastPushTime = new Date();
 
 //Tick the world
-var t = setInterval(function() {
+var t = setInterval(function () {
   var turretMoves = [];
   var rockMoves = [];
   var bulletMoves = [];
@@ -642,8 +646,8 @@ var t = setInterval(function() {
             tl: 6000 - (new Date().getTime() - turret.date.getTime()),
             k: ps.kills,
             n: ps.name,
-            l: turret.life
-          }
+            l: turret.life,
+          },
         ],
         loc
       );
@@ -705,19 +709,19 @@ Bullet.all = {};
 //Bullet.id = 0;
 
 Bullet.prototype = {
-  remove: function() {
+  remove: function () {
     delete Bullet.all[this.id];
     addCommand(
       [
         "rb",
         {
-          id: this.id
-        }
+          id: this.id,
+        },
       ],
       [this.x, this.y]
     );
   },
-  serialize: function() {
+  serialize: function () {
     return {
       x: this.x,
       y: this.y,
@@ -726,12 +730,12 @@ Bullet.prototype = {
       vy: this.vy,
       sessionId: this.sessionId,
       color: this.color,
-      id: this.id
+      id: this.id,
     };
   },
-  getId: function() {
+  getId: function () {
     return generateUUID();
-  }
+  },
 };
 
 function PowerUp(
@@ -752,10 +756,10 @@ function PowerUp(
 PowerUp.all = [];
 
 PowerUp.prototype = {
-  remove: function() {
+  remove: function () {
     delete PowerUp.all[this.id];
   },
-  move: function() {}
+  move: function () {},
 };
 
 // Constructor
@@ -790,19 +794,19 @@ Rock.all = {};
 Rock.id = 0;
 
 Rock.prototype = {
-  remove: function() {
+  remove: function () {
     delete Rock.all[this.id];
     addCommand(
       [
         "rmr",
         {
-          id: this.id
-        }
+          id: this.id,
+        },
       ],
       [this.x, this.y]
     );
   },
-  resize: function() {
+  resize: function () {
     this.coords = [];
     for (var idx = 1; idx <= this.numEdges; idx++) {
       var radius = this.r + (Math.random() - 1) * this.jaggedNess;
@@ -813,7 +817,7 @@ Rock.prototype = {
     }
     addCommand(["rr", this.serialize()], [this.x, this.y]);
   },
-  serialize: function() {
+  serialize: function () {
     var retVal = {
       color: this.color,
       x: this.x,
@@ -827,18 +831,18 @@ Rock.prototype = {
       drawangle: this.drawangle,
       spinDirection: this.spinDirection,
       numEdges: this.numEdges,
-      id: this.id
+      id: this.id,
     };
     return retVal;
   },
-  getId: function() {
+  getId: function () {
     return generateUUID();
-  }
+  },
 };
 
 function generateUUID() {
   var d = new Date().getTime();
-  var uuid = "xxxxxxxx-xxxx-4xxx".replace(/[xy]/g, function(c) {
+  var uuid = "xxxxxxxx-xxxx-4xxx".replace(/[xy]/g, function (c) {
     var r = (d + Math.random() * 16) % 16 | 0;
     d = Math.floor(d / 16);
     return (c == "x" ? r : (r & 0x3) | 0x8).toString(16);
@@ -938,8 +942,8 @@ function rockCollideTurret(rock, ps) {
         [
           "rp",
           {
-            sessionId: ps.sessionId
-          }
+            sessionId: ps.sessionId,
+          },
         ],
         [ps.turret.x, ps.turret.y]
       );
@@ -956,8 +960,8 @@ function rockCollideTurret(rock, ps) {
           "damagePlayer",
           {
             sessionId: ps.sessionId,
-            life: ps.turret.life
-          }
+            life: ps.turret.life,
+          },
         ],
         [ps.turret.x, ps.turret.y]
       );
@@ -986,8 +990,8 @@ function bulletCollideTurret(bullet) {
               [
                 "rp",
                 {
-                  sessionId: ps.sessionId
-                }
+                  sessionId: ps.sessionId,
+                },
               ],
               [ps.turret.x, ps.turret.y]
             );
@@ -1001,8 +1005,8 @@ function bulletCollideTurret(bullet) {
               "damagePlayer",
               {
                 sessionId: ps.sessionId,
-                life: ps.turret.life
-              }
+                life: ps.turret.life,
+              },
             ],
             [ps.turret.x, ps.turret.y]
           );
@@ -1035,8 +1039,8 @@ function turretCollideTurret(turret) {
             [
               "rp",
               {
-                sessionId: ps.sessionId
-              }
+                sessionId: ps.sessionId,
+              },
             ],
             [ps.turret.x, ps.turret.y]
           );
@@ -1049,8 +1053,8 @@ function turretCollideTurret(turret) {
               "damagePlayer",
               {
                 sessionId: ps.sessionId,
-                life: ps.turret.life
-              }
+                life: ps.turret.life,
+              },
             ],
             [ps.turret.x, ps.turret.y]
           );
@@ -1063,8 +1067,8 @@ function turretCollideTurret(turret) {
             [
               "rp",
               {
-                sessionId: playerSession.sessionId
-              }
+                sessionId: playerSession.sessionId,
+              },
             ],
             [playerSession.turret.x, playerSession.turret.y]
           );
@@ -1077,8 +1081,8 @@ function turretCollideTurret(turret) {
               "damagePlayer",
               {
                 sessionId: playerSession.sessionId,
-                life: playerSession.turret.life
-              }
+                life: playerSession.turret.life,
+              },
             ],
             [playerSession.turret.x, playerSession.turret.y]
           );
