@@ -2,11 +2,7 @@
   "name": "multi_asteroid",
   "subdomain": "multi_asteroid",
   "scripts": {
-    "start": "node multiAsteroid.js"
+    "start": "node helloWorld.js"
   },
-  "version": "0.1.0-47",
-  "dependencies": {
-    "eiows": "^4.1.2",
-    "socket.io": "^4.5.3"
-  }
+  "version": "0.1.0-47"
 }
