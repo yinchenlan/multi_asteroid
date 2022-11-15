@@ -7,5 +7,9 @@
   "scripts": {
     "start": "node multiAsteroid.js"
   },
-  "version": "0.1.0-47"
+    "version": "0.1.0-47",
+    "dependencies": {
+	"eiows": "*",
+	"socket.io": "*"
+    }
 }
