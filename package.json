@@ -1,6 +1,9 @@
 {
   "name": "multi_asteroid",
     "subdomain": "multi_asteroid",
+    "engines": {
+	"node": "18.x"
+    },
   "scripts": {
     "start": "node multiAsteroid.js"
   },
