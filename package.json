@@ -7,6 +7,6 @@
   "version": "0.1.0-47",
   "dependencies": {
     "eiows": "^4.1.2",
-    "socket.io": "*"
+    "socket.io": "^4.5.3"
   }
 }
