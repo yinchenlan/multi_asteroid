@@ -1,7 +1,6 @@
+const { Server } = require("socket.io");
 var app = require("http").createServer(handler),
-  io = require("socket.io")(app, {
-    wsEngine: require("eiows").Server,
-  }),
+    io = new Server(app),
   http = require("http"),
   fs = require("fs"),
   url = require("url"),

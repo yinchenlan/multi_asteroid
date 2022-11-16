@@ -6,7 +6,19 @@
   },
   "version": "0.1.0-47",
   "dependencies": {
-    "eiows": "^4.1.2",
     "socket.io": "^4.5.3"
-  }
+  },
+  "description": "multi_asteroid =============",
+  "main": "multiAsteroid.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yinchenlan/multi_asteroid.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yinchenlan/multi_asteroid/issues"
+  },
+  "homepage": "https://github.com/yinchenlan/multi_asteroid#readme"
 }
