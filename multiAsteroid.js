@@ -1,7 +1,9 @@
-const { Server } = require("socket.io");
+const {
+  Server
+} = require("socket.io");
 var app = require("http").createServer(handler),
-    io = new Server(app),
-  http = require("http"),
+  io = new Server(app),
+  https = require("https"),
   fs = require("fs"),
   url = require("url"),
   util = require("util"),
@@ -32,7 +34,9 @@ function initializeStarsPositions() {
 function addCommand(command, pos) {
   //console.log("command : " + command[0]);
   if (command[0] == "rp")
-    io.sockets.emit("rp", { sId: command[1]["sessionId"] });
+    io.sockets.emit("rp", {
+      sId: command[1]["sessionId"]
+    });
   else {
     for (var k in PlayerSession.all) {
       if (PlayerSession.all.hasOwnProperty(k)) {
@@ -52,7 +56,9 @@ function handler(req, res) {
   var action = request.pathname;
   if (action == "/laser.wav") {
     var sound = fs.readFileSync("./laser.wav");
-    res.writeHead(200, { "Content-Type": "audio/vnd.wav" });
+    res.writeHead(200, {
+      "Content-Type": "audio/vnd.wav"
+    });
     res.end(sound, "binary");
   } else {
     fs.readFile("multiAsteroid.html", "utf-8", function (err, data) {
@@ -81,13 +87,13 @@ function createBOT() {
 }
 
 function createBOTName(playerSession) {
-  http
+  https
     .get(
-      "http://names.drycodes.com/1?nameOptions=starwarsCharacters",
+      "https://names.drycodes.com/1?nameOptions=starwarsCharacters&format=json",
       (resp) => {
         let data = "";
 
-        // A chunk of data has been recieved.
+        // A chunk of data has been received.
         resp.on("data", (chunk) => {
           data += chunk;
         });
@@ -161,7 +167,9 @@ io.on("connection", function (socket) {
   var sessionId = socket.id;
   console.log("connection made for sessionId = " + sessionId);
   //createPlayerSession(sessionId, socket);
-  socket.emit("stars", { stars: starPositions });
+  socket.emit("stars", {
+    stars: starPositions
+  });
 
   socket.on("cps", function (data) {
     var sessionId = socket.id;
@@ -556,7 +564,9 @@ PlayerSession.prototype = {
     if (this.commandQueue.length == 0) return;
     if (this.socket != null) {
       //console.log("sendUpdate");
-      this.socket.emit("uw", { updateWorld: this.commandQueue });
+      this.socket.emit("uw", {
+        updateWorld: this.commandQueue
+      });
       this.commandQueue = [];
     }
   },
@@ -626,7 +636,10 @@ var t = setInterval(function () {
       else {
         turret.move();
       }
-      scoreQueue.push({ n: ps.name, s: ps.kills });
+      scoreQueue.push({
+        n: ps.name,
+        s: ps.kills
+      });
       var loc = [turret.x, turret.y];
       addCommand(
         [
@@ -660,7 +673,9 @@ var t = setInterval(function () {
   //console.log("queue length = " + scoreQueue.length);
   var now = new Date();
   if (now.getTime() - lastPushTime.getTime() >= 2000) {
-    io.sockets.emit("lb", { ss: scoreQueue });
+    io.sockets.emit("lb", {
+      ss: scoreQueue
+    });
     lastPushTime = now;
   }
 }, 1000 / FPS);
@@ -681,7 +696,7 @@ function verifyUpdate(ps) {
   for (var k in ps.commandQueue) {
     var cmd = ps.commandQueue[k];
     //console.log("command " + cmd[0]);
-    if (cmd != null && cmd[0] == "rp" /*&& cmd[1]["sessionId"]*/) {
+    if (cmd != null && cmd[0] == "rp" /*&& cmd[1]["sessionId"]*/ ) {
       console.log("verified");
       break;
     }
@@ -907,7 +922,11 @@ function moveRocks() {
       rock.x += rock.vx;
       rock.y += rock.vy;
       addCommand(
-        ["ur", { id: rock.id, x: rock.x, y: rock.y }],
+        ["ur", {
+          id: rock.id,
+          x: rock.x,
+          y: rock.y
+        }],
         [rock.x, rock.y]
       );
       for (var idx in PlayerSession.all) {
@@ -1161,7 +1180,11 @@ function moveBullets() {
       bullet.y += bullet.vy;
       //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
       addCommand(
-        ["ub", { id: bullet.id, x: bullet.x, y: bullet.y }],
+        ["ub", {
+          id: bullet.id,
+          x: bullet.x,
+          y: bullet.y
+        }],
         [bullet.x, bullet.y]
       );
       //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
