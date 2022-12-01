@@ -89,7 +89,7 @@ function createBOT() {
 function createBOTName(playerSession) {
   https
     .get(
-      "https://names.drycodes.com/1?nameOptions=starwarsCharacters&format=json",
+      "https://names.drycodes.com/1?nameOptions=starwarsFirstNames&format=json",
       (resp) => {
         let data = "";
 
