@@ -1,46 +1,45 @@
+// noinspection JSUnusedGlobalSymbols
+
 const {
   Server
 } = require("socket.io");
-var app = require("http").createServer(handler),
-  io = new Server(app),
-  https = require("https"),
-  fs = require("fs"),
-  url = require("url"),
-  util = require("util"),
-  scores = [],
-  FPS = 30,
-  MAX_X = 3200,
-  MAX_Y = 2400,
-  NUM_ROCKS = 50,
-  NUM_STARS = 1000,
-  BULLET_DISTANCE = 300,
-  MAX_PLAYERS = 200,
-  port = process.env.PORT || 8125,
-  starPositions = [],
-  bots = {};
+require("util");
+require("url");
+const app = require("http").createServer(handler),
+    io = new Server(app),
+    https = require("https"),
+    fs = require("fs"),
+    FPS = 30,
+    MAX_X = 3200,
+    MAX_Y = 2400,
+    NUM_ROCKS = 50,
+    NUM_STARS = 1000,
+    BULLET_DISTANCE = 300,
+    MAX_PLAYERS = 200,
+    port = process.env.PORT || 8125,
+    starPositions = [];
 
 app.listen(port);
 console.log("starting app");
 console.log("port : " + port);
 
 function initializeStarsPositions() {
-  for (i = 0; i < NUM_STARS; i++) {
-    var x = Math.round(Math.random() * MAX_X);
-    var y = Math.round(Math.random() * MAX_Y);
+  for (let i = 0; i < NUM_STARS; i++) {
+    const x = Math.round(Math.random() * MAX_X);
+    const y = Math.round(Math.random() * MAX_Y);
     starPositions.push([x, y]);
   }
 }
 
 function addCommand(command, pos) {
-  //console.log("command : " + command[0]);
-  if (command[0] == "rp")
+  if (command[0] === "rp")
     io.sockets.emit("rp", {
       sId: command[1]["sessionId"]
     });
   else {
-    for (var k in PlayerSession.all) {
+    for (let k in PlayerSession.all) {
       if (PlayerSession.all.hasOwnProperty(k)) {
-        var ps = PlayerSession.all[k];
+        const ps = PlayerSession.all[k];
         if (ps.socket != null && (pos == null || ps.isVisibleTo(pos) === 1)) {
           //console.log("loc " + ps.turret.x + ", " + ps.turret.y);
           ps.pushCommand(command);
@@ -52,8 +51,6 @@ function addCommand(command, pos) {
 }
 
 function handler(req, res) {
-  var request = url.parse(req.url, true);
-  var action = request.pathname;
   fs.readFile("multiAsteroid.html", "utf-8", function (err, data) {
     if (err) {
       res.writeHead(500);
@@ -68,13 +65,13 @@ function handler(req, res) {
 }
 
 function createBOT() {
-  var id = generateUUID();
-  var turret = new Turret(
-    Math.round(Math.random() * (MAX_X - 40)) + 20,
-    Math.round(Math.random() * (MAX_Y - 40)) + 20,
-    id
+  const id = generateUUID();
+  const turret = new Turret(
+      Math.round(Math.random() * (MAX_X - 40)) + 20,
+      Math.round(Math.random() * (MAX_Y - 40)) + 20,
+      id
   );
-  var playerSession = new PlayerSession(id, turret, 1, null);
+  const playerSession = new PlayerSession(id, turret, 1, null);
   createBOTName(playerSession);
 }
 
@@ -100,20 +97,19 @@ function createBOTName(playerSession) {
         });
       }
     )
-    .on("error", (err) => {
+    .on("error", () => {
       playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
     });
 }
 
 function createPlayerBOTSession(id, socket) {
-  var turret = new Turret(
-    Math.round(Math.random() * (MAX_X - 40)) + 20,
-    Math.round(Math.random() * (MAX_Y - 40)) + 20,
-    id
+  const turret = new Turret(
+      Math.round(Math.random() * (MAX_X - 40)) + 20,
+      Math.round(Math.random() * (MAX_Y - 40)) + 20,
+      id
   );
-  var playerSession = new PlayerSession(id, turret, 1, socket);
+  const playerSession = new PlayerSession(id, turret, 1, socket);
   createBOTName(playerSession);
-  //playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
   if (socket != null) {
     socket.emit("connected", {
       sessionId: id,
@@ -131,12 +127,12 @@ function createPlayerBOTSession(id, socket) {
 }
 
 function createPlayerSession(id, socket) {
-  var turret = new Turret(
-    Math.round(Math.random() * (MAX_X - 40)) + 20,
-    Math.round(Math.random() * (MAX_Y - 40)) + 20,
-    id
+  const turret = new Turret(
+      Math.round(Math.random() * (MAX_X - 40)) + 20,
+      Math.round(Math.random() * (MAX_Y - 40)) + 20,
+      id
   );
-  var playerSession = new PlayerSession(id, turret, 0, socket);
+  const playerSession = new PlayerSession(id, turret, 0, socket);
   playerSession.name = "NAME";
   if (socket != null) {
     socket.emit("connected", {
@@ -156,41 +152,41 @@ function createPlayerSession(id, socket) {
 
 io.on("connection", function (socket) {
   console.log(socket.handshake.address);
-  var sessionId = socket.id;
+  const sessionId = socket.id;
   console.log("connection made for sessionId = " + sessionId);
   //createPlayerSession(sessionId, socket);
   socket.emit("stars", {
     stars: starPositions
   });
 
-  socket.on("cps", function (data) {
-    var sessionId = socket.id;
+  socket.on("cps", function () {
+    const sessionId = socket.id;
     createPlayerSession(sessionId, socket);
   });
 
-  socket.on("cbs", function (data) {
-    var sessionId = socket.id;
+  socket.on("cbs", function () {
+    const sessionId = socket.id;
     createPlayerBOTSession(sessionId, socket);
   });
 
   socket.on("gb", function (data) {
-    var id = data["id"];
-    var bullet = Bullet.all[id];
+    const id = data["id"];
+    const bullet = Bullet.all[id];
     if (bullet != null) socket.emit("gb", bullet.serialize());
   });
 
   socket.on("gr", function (data) {
-    var id = data["id"];
-    var rock = Rock.all[id];
+    const id = data["id"];
+    const rock = Rock.all[id];
     if (rock != null) socket.emit("cr", rock.serialize());
   });
 
   socket.on("wr", function (data) {
-    var sessId = data["sId"];
-    var scale = data["s"];
-    var width = data["w"];
-    var height = data["h"];
-    var ps = PlayerSession.all[sessId];
+    const sessId = data["sId"];
+    const scale = data["s"];
+    const width = data["w"];
+    const height = data["h"];
+    const ps = PlayerSession.all[sessId];
     if (ps != null) {
       ps.scale = scale;
       ps.canvasWidth = width;
@@ -200,15 +196,11 @@ io.on("connection", function (socket) {
 
   socket.on("disconnect", function (data) {
     console.log("disconnect : " + data);
-    var sessionId = socket.id;
-    var playerSession = PlayerSession.all[sessionId];
+    const sessionId = socket.id;
+    const playerSession = PlayerSession.all[sessionId];
     if (playerSession == null) return;
     playerSession.remove();
-    //console.log("size : " + Object.keys(PlayerSession.all).length);
     console.log("Player Session " + sessionId + " removed");
-    //io.sockets.emit("removePlayer", {
-    //    "sessionId": sessionId
-    //});
     addCommand(
       [
         "rp",
@@ -218,59 +210,55 @@ io.on("connection", function (socket) {
       ],
       [playerSession.turret.x, playerSession.turret.y]
     );
-    //console.log("remove player 1 " + sessionId);
   });
 
   socket.on("ms", function (data) {
-    //console.log("moving player start");
-    var sessionId = data["sessionId"];
-    var hor = data["hor"];
-    var ver = data["ver"];
-    var ps = PlayerSession.all[socket.id];
+
+    const hor = data["hor"];
+    const ver = data["ver"];
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
-    var turret = ps.turret;
+    const turret = ps.turret;
     turret.hor = hor;
     turret.ver = ver;
   });
 
   socket.on("me", function (data) {
-    //console.log("moving player end");
-    var sessionId = data["sessionId"];
-    var ps = PlayerSession.all[socket.id];
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
-    var turret = ps.turret;
+    const turret = ps.turret;
     turret.hor = 0;
     turret.ver = 0;
   });
 
   socket.on("mp", function (data) {
-    var ps = PlayerSession.all[socket.id];
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
-    var turret = ps.turret;
+    const turret = ps.turret;
     turret.mousePosX = data["mousePosX"];
     turret.mousePosY = data["mousePosY"];
   });
 
   socket.on("serverLog", function (data) {
-    var log = data["log"];
+    const log = data["log"];
     console.log("Server Log :" + log);
   });
 
-  socket.on("md", function (data) {
-    var ps = PlayerSession.all[socket.id];
+  socket.on("md", function () {
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 1;
   });
 
-  socket.on("mu", function (data) {
-    var ps = PlayerSession.all[socket.id];
+  socket.on("mu", function () {
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.mouseDown = 0;
   });
 
   socket.on("nickName", function (data) {
     console.log("nickName ");
-    var ps = PlayerSession.all[socket.id];
+    const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
     ps.name = data["name"];
     console.log("nickName " + ps.name);
@@ -300,30 +288,32 @@ function Turret(x, y, sessionId) {
 
 Turret.prototype = {
   move: function () {
-    var turretx = this.x;
-    var turrety = this.y;
-    if (this.hor != 0 && this.ver != 0) {
+    let mousePosYTemp
+    ;
+    let mousePosXTemp
+    ;
+    let turretx = this.x;
+    let turrety = this.y;
+    if (this.hor !== 0 && this.ver !== 0) {
       turretx = this.x + this.hor * this.speed * Math.cos(Math.PI / 4);
-      var mousePosXTemp =
-        this.mousePosX + this.hor * this.speed * Math.cos(Math.PI / 4);
+      mousePosXTemp = this.mousePosX + this.hor * this.speed * Math.cos(Math.PI / 4);
       if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
         this.mousePosX = mousePosXTemp;
       }
       turrety = this.y + this.ver * this.speed * Math.sin(Math.PI / 4);
-      var mousePosYTemp =
-        this.mousePosY + this.ver * this.speed * Math.cos(Math.PI / 4);
+      mousePosYTemp = this.mousePosY + this.ver * this.speed * Math.cos(Math.PI / 4);
       if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {
         this.mousePosY = mousePosYTemp;
       }
-    } else if (this.hor != 0) {
+    } else if (this.hor !== 0) {
       turretx = this.x + this.hor * this.speed;
-      var mousePosXTemp = this.mousePosX + this.hor * this.speed;
+      mousePosXTemp = this.mousePosX + this.hor * this.speed;
       if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
         this.mousePosX = mousePosXTemp;
       }
-    } else if (this.ver != 0) {
+    } else if (this.ver !== 0) {
       turrety = this.y + this.ver * this.speed;
-      var mousePosYTemp = this.mousePosY + this.ver * this.speed;
+      mousePosYTemp = this.mousePosY + this.ver * this.speed;
       if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {
         this.mousePosY = mousePosYTemp;
       }
@@ -337,8 +327,7 @@ Turret.prototype = {
     this.x = Math.round(this.x);
     this.y = Math.round(this.y);
     this.angle = Math.atan2(this.mousePosY - this.y, this.mousePosX - this.x);
-    //console.log("angle : " + this.angle + ", mousePosX : " + this.mousePosX + ", mousePosY : " + this.mousePosY + ", x : " + this.x + ", y : " + this.y);
-    var recoilAngle = this.angle + Math.PI;
+    const recoilAngle = this.angle + Math.PI;
     this.recoilX = Math.round(this.x + this.recoil * Math.cos(recoilAngle));
     this.recoilY = Math.round(this.y + this.recoil * Math.sin(recoilAngle));
     if (this.recoil > 0) {
@@ -348,7 +337,7 @@ Turret.prototype = {
   },
 };
 
-var turretColors = [
+const turretColors = [
   "orange",
   "red",
   "blue",
@@ -358,10 +347,10 @@ var turretColors = [
   "pink",
 ];
 
-var currColorIdx = 0;
+let currColorIdx = 0;
 
 function nextTurretColor() {
-  var colorIdx = currColorIdx;
+  const colorIdx = currColorIdx;
   currColorIdx = (currColorIdx + 1) % turretColors.length;
   return turretColors[colorIdx];
 }
@@ -383,57 +372,51 @@ function BSM() {
 
 BSM.prototype = {
   getMostThreateningObstacle: function (sessionId) {
-    var x = 0;
-    var y = 0;
-    var currMin = 1000000;
-    for (var idx in Rock.all) {
-      var rock = Rock.all[idx];
-      var dist = this.getDistance(
+    let dist;
+    let idx;
+    let x = 0;
+    let y = 0;
+    let currMin = 1000000;
+    for (idx in Rock.all) {
+      const rock = Rock.all[idx];
+      dist = this.getDistance(
         rock.x,
         rock.y,
         this.shortAheadX,
         this.shortAheadY
       );
-      //console.log("dist : " + dist + ", radius : " + rock.r);
       if (dist <= rock.r * 1.2 && dist < currMin) {
         currMin = dist;
         x = rock.x;
         y = rock.y;
-        //console.log("dist : " + dist + ", radius : " + rock.r);
-        //continue;
       }
       dist = this.getDistance(rock.x, rock.y, this.aheadX, this.aheadY);
       if (dist <= rock.r * 1.2 && dist < currMin) {
         currMin = dist;
         x = rock.x;
         y = rock.y;
-        //console.log("dist : " + dist + ", radius : " + rock.r);
       }
     }
 
-    for (var idx in PlayerSession.all) {
-      var turret = PlayerSession.all[idx].turret;
-      if (turret.sessionId == sessionId) continue;
-      var dist = this.getDistance(
-        turret.x,
-        turret.y,
-        this.shortAheadX,
-        this.shortAheadY
+    for (idx in PlayerSession.all) {
+      const turret = PlayerSession.all[idx].turret;
+      if (turret.sessionId === sessionId) continue;
+      dist = this.getDistance(
+          turret.x,
+          turret.y,
+          this.shortAheadX,
+          this.shortAheadY
       );
-      //console.log("dist : " + dist + ", radius : " + turret.baseRadius);
       if (dist <= 30 && dist < currMin) {
         currMin = dist;
         x = turret.x;
         y = turret.y;
-        //console.log("dist : " + dist);
-        //continue;
       }
       dist = this.getDistance(turret.x, turret.y, this.aheadX, this.aheadY);
       if (dist <= 30 && dist < currMin) {
         currMin = dist;
         x = turret.x;
         y = turret.y;
-        //console.log("dist : " + dist);
       }
     }
     if (currMin < 10000) return [x, y];
@@ -443,7 +426,7 @@ BSM.prototype = {
     return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
   },
   calculateAheadVector: function (x, y) {
-    var angle = Math.atan2(this.currVy, this.currVx);
+    const angle = Math.atan2(this.currVy, this.currVx);
     this.aheadX = x + Math.cos(angle) * this.aheadDist;
     this.aheadY = y + Math.sin(angle) * this.aheadDist;
     this.shortAheadX = x + Math.cos(angle) * 10;
@@ -462,7 +445,7 @@ function PlayerSession(sessionId, turret, isBot, socket) {
   this.name = "";
   this.bsm = null;
   this.isBot = isBot;
-  if (isBot == 1) {
+  if (isBot === 1) {
     this.bsm = new BSM();
   }
   this.socket = socket;
@@ -480,24 +463,20 @@ PlayerSession.prototype = {
     delete PlayerSession.all[this.sessionId];
   },
   isNew: function () {
-    var now = new Date();
-    if (now - this.date < 6000) {
-      return true;
-    } else {
-      return false;
-    }
+    const now = new Date();
+    return now - this.date < 6000;
   },
   tick: function () {
     this.wander();
     this.avoid();
-    var angle = Math.atan2(this.bsm.currVy, this.bsm.currVx);
+    const angle = Math.atan2(this.bsm.currVy, this.bsm.currVx);
     this.turret.x = Math.round(
       this.turret.x + this.turret.speed * Math.cos(angle)
     );
     this.turret.y = Math.round(
       this.turret.y + this.turret.speed * Math.sin(angle)
     );
-    var recoilAngle = this.turret.angle + Math.PI;
+    const recoilAngle = this.turret.angle + Math.PI;
     this.turret.recoilX = Math.round(
       this.turret.x + this.turret.recoil * Math.cos(recoilAngle)
     );
@@ -512,38 +491,37 @@ PlayerSession.prototype = {
     turretCollideTurret(this.turret);
   },
   wander: function () {
-    var now = new Date();
+    const now = new Date();
     if (now - this.bsm.lastTicked > this.bsm.tickFreq) {
       this.bsm.destX = Math.round(Math.random() * MAX_X);
       this.bsm.destY = Math.round(Math.random() * MAX_Y);
       this.bsm.lastTicked = now;
     }
-    var angle = Math.atan2(
-      this.bsm.destY - this.turret.y,
-      this.bsm.destX - this.turret.x
+    const angle = Math.atan2(
+        this.bsm.destY - this.turret.y,
+        this.bsm.destX - this.turret.x
     );
-    var destVx = Math.cos(angle);
-    var destVy = Math.sin(angle);
-    var dVx = (destVx - this.bsm.currVx) * 0.05;
-    var dVy = (destVy - this.bsm.currVy) * 0.05;
+    const destVx = Math.cos(angle);
+    const destVy = Math.sin(angle);
+    const dVx = (destVx - this.bsm.currVx) * 0.05;
+    const dVy = (destVy - this.bsm.currVy) * 0.05;
     this.bsm.currVx = this.bsm.currVx + dVx;
     this.bsm.currVy = this.bsm.currVy + dVy;
     this.turret.angle = angle;
   },
   avoid: function () {
     this.bsm.calculateAheadVector(this.turret.x, this.turret.y);
-    var pos = this.bsm.getMostThreateningObstacle(this.turret.sessionId);
+    const pos = this.bsm.getMostThreateningObstacle(this.turret.sessionId);
     if (pos != null) {
-      var angle = Math.atan2(
-        this.bsm.aheadY - pos[1],
-        this.bsm.aheadX - pos[0]
+      const angle = Math.atan2(
+          this.bsm.aheadY - pos[1],
+          this.bsm.aheadX - pos[0]
       );
-      var avoidanceX = Math.cos(angle);
-      var avoidanceY = Math.sin(angle);
+      const avoidanceX = Math.cos(angle);
+      const avoidanceY = Math.sin(angle);
       this.bsm.currVx = this.bsm.currVx + avoidanceX;
       this.bsm.currVy = this.bsm.currVy + avoidanceY;
-      var angle2 = Math.atan2(pos[1] - this.turret.y, pos[0] - this.turret.x);
-      this.turret.angle = angle2;
+      this.turret.angle = Math.atan2(pos[1] - this.turret.y, pos[0] - this.turret.x);
       this.mouseDown = 1;
     } else {
       this.mouseDown = 0;
@@ -553,7 +531,7 @@ PlayerSession.prototype = {
     this.commandQueue.push(cmd);
   },
   sendUpdate: function () {
-    if (this.commandQueue.length == 0) return;
+    if (this.commandQueue.length === 0) return;
     if (this.socket != null) {
       //console.log("sendUpdate");
       this.socket.emit("uw", {
@@ -564,9 +542,9 @@ PlayerSession.prototype = {
   },
   isVisibleTo: function (pos) {
     //return 1;
-    if (pos == null || pos.length != 2) return 0;
-    var xos = this.getXOffset();
-    var yos = this.getYOffset();
+    if (pos == null || pos.length !== 2) return 0;
+    const xos = this.getXOffset();
+    const yos = this.getYOffset();
     //console.log("here");
     //console.log("offset " + xos + ", " + yos);
     //console.log("net pos " + (pos[0] + xos) + ", " +  (pos[1] + yos));
@@ -584,8 +562,8 @@ PlayerSession.prototype = {
   },
   getXOffset: function () {
     //console.log("here");
-    var negX = -1 * this.turret.x;
-    var offset = negX + this.canvasWidth / 2 / this.scale;
+    const negX = -1 * this.turret.x;
+    const offset = negX + this.canvasWidth / 2 / this.scale;
     if (this.turret.x < this.canvasWidth / 2 / this.scale) {
       return 0;
     } else if (this.turret.x > MAX_X - this.canvasWidth / 2 / this.scale) {
@@ -595,8 +573,8 @@ PlayerSession.prototype = {
     return offset;
   },
   getYOffset: function () {
-    var negY = -1 * this.turret.y;
-    var offset = negY + this.canvasHeight / 2 / this.scale;
+    const negY = -1 * this.turret.y;
+    const offset = negY + this.canvasHeight / 2 / this.scale;
     if (this.turret.y < this.canvasHeight / 2 / this.scale) {
       return 0;
     } else if (this.turret.y > MAX_Y - this.canvasHeight / 2 / this.scale) {
@@ -608,23 +586,20 @@ PlayerSession.prototype = {
 
 initializeStarsPositions();
 
-var lastPushTime = new Date();
+let lastPushTime = new Date();
 
 //Tick the world
-var t = setInterval(function () {
-  var turretMoves = [];
-  var rockMoves = [];
-  var bulletMoves = [];
+setInterval(function () {
   if (Object.keys(PlayerSession.all).length < MAX_PLAYERS) {
     createBOT();
   }
-  var scoreQueue = [];
-  for (var key in PlayerSession.all) {
+  const scoreQueue = [];
+  for (let key in PlayerSession.all) {
     if (PlayerSession.all.hasOwnProperty(key)) {
-      var ps = PlayerSession.all[key];
-      var sId = ps.sessionId;
-      var turret = ps.turret;
-      if (ps.isBot == 1) ps.tick();
+      const ps = PlayerSession.all[key];
+      const sId = ps.sessionId;
+      const turret = ps.turret;
+      if (ps.isBot === 1) ps.tick();
       else {
         turret.move();
       }
@@ -632,7 +607,7 @@ var t = setInterval(function () {
         n: ps.name,
         s: ps.kills
       });
-      var loc = [turret.x, turret.y];
+      const loc = [turret.x, turret.y];
       addCommand(
         [
           "tm",
@@ -663,7 +638,7 @@ var t = setInterval(function () {
   createAllBullets();
   emitWorld();
   //console.log("queue length = " + scoreQueue.length);
-  var now = new Date();
+  const now = new Date();
   if (now.getTime() - lastPushTime.getTime() >= 2000) {
     io.sockets.emit("lb", {
       ss: scoreQueue
@@ -673,25 +648,12 @@ var t = setInterval(function () {
 }, 1000 / FPS);
 
 function emitWorld() {
-  for (var k in PlayerSession.all) {
+  for (let k in PlayerSession.all) {
     //if (PlayerSession.all.hasOwnProperty(k)) {
-    var ps = PlayerSession.all[k];
+    const ps = PlayerSession.all[k];
     //verifyUpdate(ps);
     ps.sendUpdate();
     //}
-  }
-}
-
-function verifyUpdate(ps) {
-  var cnt = 0;
-  //while (cnt++ < ps.commandQueue.length) {
-  for (var k in ps.commandQueue) {
-    var cmd = ps.commandQueue[k];
-    //console.log("command " + cmd[0]);
-    if (cmd != null && cmd[0] == "rp" /*&& cmd[1]["sessionId"]*/ ) {
-      console.log("verified");
-      break;
-    }
   }
 }
 
@@ -783,11 +745,11 @@ function Rock(x, y, r) {
   this.spinDirection = 1;
   this.numEdges = 18;
   this.id = this.getId();
-  for (var idx = 1; idx <= this.numEdges; idx++) {
-    var radius = this.r + (Math.random() - 1) * this.jaggedNess;
-    var rx = radius * Math.cos(((2 * Math.PI) / this.numEdges) * idx);
-    var ry = radius * Math.sin(((2 * Math.PI) / this.numEdges) * idx);
-    var coord = [rx, ry];
+  for (let idx = 1; idx <= this.numEdges; idx++) {
+    const radius = this.r + (Math.random() - 1) * this.jaggedNess;
+    const rx = radius * Math.cos(((2 * Math.PI) / this.numEdges) * idx);
+    const ry = radius * Math.sin(((2 * Math.PI) / this.numEdges) * idx);
+    const coord = [rx, ry];
     this.coords.push(coord);
   }
   //Rock.all.push(this);
@@ -814,17 +776,17 @@ Rock.prototype = {
   },
   resize: function () {
     this.coords = [];
-    for (var idx = 1; idx <= this.numEdges; idx++) {
-      var radius = this.r + (Math.random() - 1) * this.jaggedNess;
-      var rx = radius * Math.cos(((2 * Math.PI) / this.numEdges) * idx);
-      var ry = radius * Math.sin(((2 * Math.PI) / this.numEdges) * idx);
-      var coord = [rx, ry];
+    for (let idx = 1; idx <= this.numEdges; idx++) {
+      const radius = this.r + (Math.random() - 1) * this.jaggedNess;
+      const rx = radius * Math.cos(((2 * Math.PI) / this.numEdges) * idx);
+      const ry = radius * Math.sin(((2 * Math.PI) / this.numEdges) * idx);
+      const coord = [rx, ry];
       this.coords.push(coord);
     }
     addCommand(["rr", this.serialize()], [this.x, this.y]);
   },
   serialize: function () {
-    var retVal = {
+    return {
       color: this.color,
       x: this.x,
       y: this.y,
@@ -839,7 +801,6 @@ Rock.prototype = {
       numEdges: this.numEdges,
       id: this.id,
     };
-    return retVal;
   },
   getId: function () {
     return generateUUID();
@@ -847,32 +808,30 @@ Rock.prototype = {
 };
 
 function generateUUID() {
-  var d = new Date().getTime();
-  var uuid = "xxxxxxxx-xxxx-4xxx".replace(/[xy]/g, function (c) {
-    var r = (d + Math.random() * 16) % 16 | 0;
+  let d = new Date().getTime();
+  return "xxxxxxxx-xxxx-4xxx".replace(/[xy]/g, function (c) {
+    const r = (d + Math.random() * 16) % 16 | 0;
     d = Math.floor(d / 16);
-    return (c == "x" ? r : (r & 0x3) | 0x8).toString(16);
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
   });
-  //console.log(uuid);
-  return uuid;
 }
 
 function rndColor() {
-  var simpleColors = ["grey", "silver", "lightblue"];
+  const simpleColors = ["grey", "silver", "lightblue"];
   return simpleColors[Math.floor(Math.random() * 3)];
 }
 
-var rockDate = new Date();
+let rockDate = new Date();
 
 function createRocks() {
-  var currDate = new Date();
+  const currDate = new Date();
   if (rockDate == null) {
     rockDate = currDate;
   } else {
     if (currDate - rockDate > 200 && Object.keys(Rock.all).length < NUM_ROCKS) {
-      var side = Math.floor(Math.random() * 4);
-      var startx = 0,
-        starty = 0;
+      const side = Math.floor(Math.random() * 4);
+      let startx = 0,
+          starty = 0;
       switch (side) {
         case 0:
           startx = (MAX_X - 1) * Math.random();
@@ -892,10 +851,10 @@ function createRocks() {
           break;
       }
       //console.log("creating rock");
-      var rock = new Rock(startx, starty, 90 * Math.random() + 20);
+      const rock = new Rock(startx, starty, 90 * Math.random() + 20);
       rock.color = rndColor();
-      var angle = Math.atan2(MAX_Y / 2 - rock.y, MAX_X / 2 - rock.x);
-      var rockSpeed = 80 / rock.r;
+      const angle = Math.atan2(MAX_Y / 2 - rock.y, MAX_X / 2 - rock.x);
+      const rockSpeed = 80 / rock.r;
       rock.vx = rockSpeed * Math.cos(angle);
       rock.vy = rockSpeed * Math.sin(angle);
       if (Math.random() > 0.5) {
@@ -907,9 +866,9 @@ function createRocks() {
 }
 
 function moveRocks() {
-  for (var k in Rock.all) {
+  for (let k in Rock.all) {
     if (Rock.all.hasOwnProperty(k)) {
-      var rock = Rock.all[k];
+      const rock = Rock.all[k];
       if (rock == null) continue;
       rock.x += rock.vx;
       rock.y += rock.vy;
@@ -921,9 +880,9 @@ function moveRocks() {
         }],
         [rock.x, rock.y]
       );
-      for (var idx in PlayerSession.all) {
+      for (let idx in PlayerSession.all) {
         if (PlayerSession.all.hasOwnProperty(idx)) {
-          var ps = PlayerSession.all[idx];
+          const ps = PlayerSession.all[idx];
           if (ps.isNew()) {
             continue;
           }
@@ -946,7 +905,7 @@ function moveRocks() {
 //Rock to Turret collision
 function rockCollideTurret(rock, ps) {
   if (distance(ps.turret.x, ps.turret.y, rock.x, rock.y) <= 5 + rock.r) {
-    var damage = rock.r;
+    const damage = rock.r;
     if (ps.turret.life - damage <= 0) {
       addCommand(
         [
@@ -981,9 +940,9 @@ function rockCollideTurret(rock, ps) {
 }
 
 function bulletCollideTurret(bullet) {
-  for (var idx in PlayerSession.all) {
+  for (let idx in PlayerSession.all) {
     if (PlayerSession.all.hasOwnProperty(idx)) {
-      var ps = PlayerSession.all[idx];
+      const ps = PlayerSession.all[idx];
       if (ps.isNew()) {
         continue;
       }
@@ -991,23 +950,20 @@ function bulletCollideTurret(bullet) {
         distance(ps.turret.x, ps.turret.y, bullet.x, bullet.y) <=
         bullet.r + 5
       ) {
-        var damage = 20;
-        var shooterSession = PlayerSession.all[bullet.sessionId];
+        const damage = 20;
+        const shooterSession = PlayerSession.all[bullet.sessionId];
         if (shooterSession != null) shooterSession.kills += 1;
         if (ps.turret.life - damage <= 0) {
-          if (ps != null) {
-            addCommand(
-              [
-                "rp",
-                {
-                  sessionId: ps.sessionId,
-                },
-              ],
-              [ps.turret.x, ps.turret.y]
-            );
-            //console.log("remove player 3 " + ps.sessionId);
-            ps.remove();
-          }
+          addCommand(
+            [
+              "rp",
+              {
+                sessionId: ps.sessionId,
+              },
+            ],
+            [ps.turret.x, ps.turret.y]
+          );
+          ps.remove();
         } else {
           ps.turret.life = ps.turret.life - damage;
           addCommand(
@@ -1030,20 +986,20 @@ function bulletCollideTurret(bullet) {
 
 function turretCollideTurret(turret) {
   //console.log("turretCollideTurret");
-  for (var idx in PlayerSession.all) {
+  for (let idx in PlayerSession.all) {
     if (PlayerSession.all.hasOwnProperty(idx)) {
-      var ps = PlayerSession.all[idx];
+      const ps = PlayerSession.all[idx];
       if (ps.isNew()) {
         continue;
       }
-      if (ps.turret.sessionId == turret.sessionId) continue;
-      var dist = distance(ps.turret.x, ps.turret.y, turret.x, turret.y);
+      if (ps.turret.sessionId === turret.sessionId) continue;
+      const dist = distance(ps.turret.x, ps.turret.y, turret.x, turret.y);
       //console.log("dist " + dist);
       if (dist <= turret.baseRadius + ps.turret.baseRadius) {
         //console.log("collided");
-        var damage = 20;
+        const damage = 20;
         if (ps.turret.life - damage <= 0) {
-          var shooterSession = PlayerSession.all[turret.sessionId];
+          const shooterSession = PlayerSession.all[turret.sessionId];
           if (shooterSession != null) shooterSession.kills += 1;
           addCommand(
             [
@@ -1069,7 +1025,7 @@ function turretCollideTurret(turret) {
             [ps.turret.x, ps.turret.y]
           );
         }
-        var playerSession = PlayerSession.all[turret.sessionId];
+        const playerSession = PlayerSession.all[turret.sessionId];
         if (playerSession == null) continue;
         if (playerSession.turret.life - damage <= 0) {
           ps.kills += 1;
@@ -1104,14 +1060,14 @@ function turretCollideTurret(turret) {
 
 // Bullet to Rock collision
 function bulletCollideRock(bullet) {
-  for (var idx in Rock.all) {
-    var rock = Rock.all[idx];
+  for (let idx in Rock.all) {
+    const rock = Rock.all[idx];
     if (distance(rock.x, rock.y, bullet.x, bullet.y) <= bullet.r + rock.r) {
       bullet.remove();
-      var ps = PlayerSession.all[bullet.sessionId];
+      const ps = PlayerSession.all[bullet.sessionId];
       if (ps == null) continue;
-      var turret = ps.turret;
-      if (rock.color == "lightblue")
+      const turret = ps.turret;
+      if (rock.color === "lightblue")
         turret.life = Math.min(100, turret.life + 10);
       if (rock.r < 20) {
         rock.remove();
@@ -1126,13 +1082,13 @@ function bulletCollideRock(bullet) {
 }
 
 function rockCollideRock(rock) {
-  for (var idx in Rock.all) {
-    var r = Rock.all[idx];
-    if (rock.id == r.id) {
+  for (let idx in Rock.all) {
+    const r = Rock.all[idx];
+    if (rock.id === r.id) {
       continue;
     }
     if (distance(rock.x, rock.y, r.x, r.y) <= rock.r + r.r) {
-      var diff = Math.abs(rock.r - r.r);
+      const diff = Math.abs(rock.r - r.r);
       if (diff < 20) {
         r.remove();
         rock.remove();
@@ -1153,15 +1109,15 @@ function rockCollideRock(rock) {
 }
 
 function distance(x1, y1, x2, y2) {
-  var diffx = x2 - x1;
-  var diffy = y2 - y1;
+  const diffx = x2 - x1;
+  const diffy = y2 - y1;
   return Math.sqrt(diffx * diffx + diffy * diffy);
 }
 
 function moveBullets() {
-  for (var k in Bullet.all) {
+  for (let k in Bullet.all) {
     if (Bullet.all.hasOwnProperty(k)) {
-      var bullet = Bullet.all[k];
+      const bullet = Bullet.all[k];
       if (bullet == null) continue;
       if (
         distance(bullet.x, bullet.y, bullet.ox, bullet.oy) > BULLET_DISTANCE
@@ -1196,18 +1152,15 @@ function moveBullets() {
 
 function createBullets(sessionId) {
   //console.log("bullet session id " + sessionId);
-  var now = new Date();
-  var ps = PlayerSession.all[sessionId];
-  var turret = ps.turret;
-  var color = turret.color;
-  if (ps == null) return;
-  if (turret == null) console.log("null turret");
-  if (!ps.isNew() && ps.mouseDown == 1 && now - ps.mouseDate > 500) {
-    var x = turret.recoilX + turret.length * Math.cos(turret.angle);
-    var y = turret.recoilY + turret.length * Math.sin(turret.angle);
-    //console.log("x : " + x + ", y : " + y + ", color : " + color + ", sessionId : " + sessionId);
-    var bullet = new Bullet(x, y, 4, color, sessionId);
-    var speed = 16;
+  const now = new Date();
+  const ps = PlayerSession.all[sessionId];
+  const turret = ps.turret;
+  const color = turret.color;
+  if (!ps.isNew() && ps.mouseDown === 1 && now - ps.mouseDate > 500) {
+    const x = turret.recoilX + turret.length * Math.cos(turret.angle);
+    const y = turret.recoilY + turret.length * Math.sin(turret.angle);
+    const bullet = new Bullet(x, y, 4, color, sessionId);
+    const speed = 16;
     bullet.vx = speed * Math.cos(turret.angle);
     bullet.vy = speed * Math.sin(turret.angle);
     turret.recoil = 5;
@@ -1217,7 +1170,7 @@ function createBullets(sessionId) {
 }
 
 function createAllBullets() {
-  for (var sessionId in PlayerSession.all) {
+  for (let sessionId in PlayerSession.all) {
     if (PlayerSession.all.hasOwnProperty(sessionId)) {
       createBullets(sessionId);
     }
