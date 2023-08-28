@@ -15,7 +15,7 @@ const app = require("http").createServer(handler),
     NUM_ROCKS = 50,
     NUM_STARS = 1000,
     BULLET_DISTANCE = 300,
-    MAX_PLAYERS = 200,
+    MAX_PLAYERS = 50,
     port = process.env.PORT || 8125,
     starPositions = [];
 
