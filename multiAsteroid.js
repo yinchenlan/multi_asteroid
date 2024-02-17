@@ -23,6 +23,15 @@ app.listen(port);
 console.log("starting app");
 console.log("port : " + port);
 
+var characterNames;
+
+function initializeStarWarsCharacterNames() {
+  fs.readFile('star_wars_character_names.txt', function(err, data) {
+    if(err) throw err;
+    characterNames = data.toString().split("\n");
+});
+}
+
 function initializeStarsPositions() {
   for (let i = 0; i < NUM_STARS; i++) {
     const x = Math.round(Math.random() * MAX_X);
@@ -76,30 +85,8 @@ function createBOT() {
 }
 
 function createBOTName(playerSession) {
-  https
-    .get(
-      "https://names.drycodes.com/1?nameOptions=starwarsFirstNames&format=json",
-      (resp) => {
-        let data = "";
-
-        // A chunk of data has been received.
-        resp.on("data", (chunk) => {
-          data += chunk;
-        });
-
-        // The whole response has been received. Print out the result.
-        resp.on("end", () => {
-          try {
-            playerSession.name = JSON.parse(data)[0];
-          } catch (e) {
-            playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
-          }
-        });
-      }
-    )
-    .on("error", () => {
-      playerSession.name = "BOT" + Math.round(Math.random() * 999) + 1;
-    });
+  let n = characterNames.length;
+  playerSession.name = characterNames[Math.round(Math.random() * 50)];
 }
 
 function createPlayerBOTSession(id, socket) {
@@ -583,7 +570,7 @@ PlayerSession.prototype = {
     return offset;
   },
 };
-
+initializeStarWarsCharacterNames();
 initializeStarsPositions();
 
 let lastPushTime = new Date();
