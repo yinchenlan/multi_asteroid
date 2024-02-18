@@ -22,7 +22,7 @@
             <td>
                 <canvas id="gameCanvas"></canvas>
                 <form name = "nameForm" action="#"> 
-                <font color="blue">Enter Name: </font><input type="text" name="nickName">
+                <font color="blue">Enter Name: </font><input type="text" name="nickName" value="Ace">
                 <input type="submit" value="Start" onclick="socket = connect(); createPlayerSession(); updateSocket(); setNickName(); hideForm(); return false;">
                 </form> 
             </td>
@@ -493,7 +493,8 @@
         }
 
         function setNickNameToPlayerSession() {
-            PlayerSession.all[sessionId].name = nickName;
+            if (nickName)
+                PlayerSession.all[sessionId].name = nickName;
             socket.emit("nickName", {
                 "sessionId": sessionId,
                 "name": nickName
@@ -676,9 +677,15 @@
 		  //if (!isYou)alert("got here");
             if (isGhost) {
                 ctx.save();
-                ctx.font = "4pt Courier New";
-                ctx.fillStyle = "white";
-                ctx.globalAlpha = .5;
+                if (!isYou) {
+                    ctx.font = "4pt Palatino";
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = .5;
+                } else {
+                    ctx.font = "bold 5pt Palatino";
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = .8;
+                }
                 ctx.fillText(ps.getTimeLeft(), getXOffset() + turret.x - 14, getYOffset() + turret.y - 14);
                 ctx.restore();
                 ctx.save();
@@ -690,9 +697,15 @@
                 ctx.restore();
             } else {
                 ctx.save();
-                ctx.font = "4pt Courier New";
-                ctx.fillStyle = "white";
-                ctx.globalAlpha = .8;
+                if (!isYou) {
+                    ctx.font = "4pt Palatino";
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = .8;
+                } else {
+                    ctx.font = "bold 5pt Palatino";
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = 1;
+                }
                 ctx.fillText(ps.name, getXOffset() + turret.x - 14, getYOffset() + turret.y - 25);
                 ctx.fillText(ps.kills, getXOffset() + turret.x - 14, getYOffset() + turret.y - 17);
                 ctx.restore();
@@ -765,12 +778,12 @@
 
         function drawScores() {
             ctx.save();
-            ctx.font = "6pt Fantasy";
+            ctx.font = "6pt Palatino";
             ctx.fillStyle = "#6495ED";
             ctx.fillText("Leader Board : ", canvas.width/scale - 130, 50);
             ctx.restore();
             ctx.save();
-            ctx.font = "6pt Fantasy";
+            ctx.font = "6pt Palatino";
             ctx.fillStyle = "#b8c7e3";
             var inc = 20;
             //debug("scores " + scores);

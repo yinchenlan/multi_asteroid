@@ -244,6 +244,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on("nickName", function (data) {
+    if (!data["name"]) return;
     console.log("nickName ");
     const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
