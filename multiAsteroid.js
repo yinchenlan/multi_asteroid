@@ -86,7 +86,7 @@ function createBOT() {
 
 function createBOTName(playerSession) {
   let n = characterNames.length;
-  playerSession.name = characterNames[Math.round(Math.random() * 50)];
+  playerSession.name = characterNames[Math.floor(Math.random() * n)];
 }
 
 function createPlayerBOTSession(id, socket) {
