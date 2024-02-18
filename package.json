@@ -10,7 +10,6 @@
   },
   "description": "multi_asteroid =============",
   "main": "multiAsteroid.js",
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yinchenlan/multi_asteroid.git"
@@ -20,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/yinchenlan/multi_asteroid/issues"
   },
-  "homepage": "https://github.com/yinchenlan/multi_asteroid#readme"
+  "homepage": "https://github.com/yinchenlan/multi_asteroid#readme",
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8",
+    "utf-8-validate": "^5.0.10"
+  }
 }
