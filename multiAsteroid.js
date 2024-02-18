@@ -1143,7 +1143,7 @@ function createBullets(sessionId) {
   const ps = PlayerSession.all[sessionId];
   const turret = ps.turret;
   const color = turret.color;
-  const numTurrets = Math.min(Math.round(1 + ps.kills / 2), 12);
+  const numTurrets = Math.min(1 + Math.floor(ps.kills / 2), 12);
   if (!ps.isNew() && ps.mouseDown === 1 && now - ps.mouseDate > 500) {
     let bulletAngle = turret.angle - numTurrets * (0.0174533 / 2);
     for (let i = 0; i < numTurrets; i++) {
