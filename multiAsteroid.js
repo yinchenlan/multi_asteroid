@@ -939,7 +939,10 @@ function bulletCollideTurret(bullet) {
       ) {
         const damage = 20;
         const shooterSession = PlayerSession.all[bullet.sessionId];
-        if (shooterSession != null) shooterSession.kills += 1;
+        if (shooterSession != null) {
+          shooterSession.kills += 1;
+          shooterSession.turret.life = 100;
+        }
         if (ps.turret.life - damage <= 0) {
           addCommand(
             [
