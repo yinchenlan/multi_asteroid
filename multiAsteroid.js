@@ -1143,16 +1143,21 @@ function createBullets(sessionId) {
   const ps = PlayerSession.all[sessionId];
   const turret = ps.turret;
   const color = turret.color;
+  const numTurrets = Math.min(Math.round(1 + ps.kills / 2), 12);
   if (!ps.isNew() && ps.mouseDown === 1 && now - ps.mouseDate > 500) {
-    const x = turret.recoilX + turret.length * Math.cos(turret.angle);
-    const y = turret.recoilY + turret.length * Math.sin(turret.angle);
-    const bullet = new Bullet(x, y, 4, color, sessionId);
-    const speed = 16;
-    bullet.vx = speed * Math.cos(turret.angle);
-    bullet.vy = speed * Math.sin(turret.angle);
-    turret.recoil = 5;
-    ps.mouseDate = now;
-    addCommand(["cb", bullet.serialize()], [bullet.x, bullet.y]);
+    let bulletAngle = turret.angle - numTurrets * (0.0174533 / 2);
+    for (let i = 0; i < numTurrets; i++) {
+      const x = turret.recoilX + turret.length * Math.cos(turret.angle);
+      const y = turret.recoilY + turret.length * Math.sin(turret.angle);
+      const bullet = new Bullet(x, y, 4, color, sessionId);
+      const speed = 16;
+      bullet.vx = speed * Math.cos(bulletAngle);
+      bullet.vy = speed * Math.sin(bulletAngle);
+      turret.recoil = 5;
+      ps.mouseDate = now;
+      addCommand(["cb", bullet.serialize()], [bullet.x, bullet.y]);
+      bulletAngle += 0.0174533;
+    }
   }
 }
 
