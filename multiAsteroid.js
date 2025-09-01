@@ -15,7 +15,7 @@ const app = require("http").createServer(handler),
     NUM_ROCKS = 200,
     NUM_STARS = 1000,
     BULLET_DISTANCE = 300,
-    MAX_PLAYERS = 50,
+    MAX_PLAYERS = 25,
     port = process.env.PORT || 8125,
     starPositions = [];
 
@@ -23,12 +23,34 @@ app.listen(port);
 console.log("starting app");
 console.log("port : " + port);
 
+// Logging utility with timestamps
+function log(level, message, data = null) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] [${level}] ${message}`;
+  
+  if (data) {
+    console.log(logMessage, data);
+  } else {
+    console.log(logMessage);
+  }
+}
+
+// Log levels: INFO, DEBUG, WARN, ERROR
+function logInfo(message, data) { log('INFO', message, data); }
+function logDebug(message, data) { log('DEBUG', message, data); }
+function logWarn(message, data) { log('WARN', message, data); }
+function logError(message, data) { log('ERROR', message, data); }
+
 var characterNames;
 
 function initializeStarWarsCharacterNames() {
   fs.readFile('star_wars_character_names.txt', function(err, data) {
-    if(err) throw err;
+    if(err) {
+      logError('Failed to load Star Wars character names', err);
+      throw err;
+    }
     characterNames = data.toString().split("\n");
+    logInfo(`Loaded ${characterNames.length} character names for bots`);
 });
 }
 
@@ -38,6 +60,7 @@ function initializeStarsPositions() {
     const y = Math.round(Math.random() * MAX_Y);
     starPositions.push([x, y]);
   }
+  logInfo(`Generated ${NUM_STARS} star positions for background`);
 }
 
 function addCommand(command, pos) {
@@ -82,6 +105,7 @@ function createBOT() {
   );
   const playerSession = new PlayerSession(id, turret, 1, null);
   createBOTName(playerSession);
+  // Removed BOT creation debug log for performance
 }
 
 function createBOTName(playerSession) {
@@ -133,26 +157,32 @@ function createPlayerSession(id, socket) {
       MAX_X: MAX_X,
       MAX_Y: MAX_Y,
     });
+    
+    // Send current power-up state (or lack thereof)
+    socket.emit("powerUp", {
+      activePowerUp: playerSession.activePowerUp
+    });
   }
   return playerSession;
 }
 
 io.on("connection", function (socket) {
-  console.log(socket.handshake.address);
+  logInfo(`New connection from ${socket.handshake.address}, sessionId: ${socket.id}`);
   const sessionId = socket.id;
-  console.log("connection made for sessionId = " + sessionId);
-  //createPlayerSession(sessionId, socket);
+  
   socket.emit("stars", {
     stars: starPositions
   });
 
   socket.on("cps", function () {
     const sessionId = socket.id;
+    logInfo(`Creating human player session for ${sessionId}`);
     createPlayerSession(sessionId, socket);
   });
 
   socket.on("cbs", function () {
     const sessionId = socket.id;
+    logInfo(`Creating BOT player session for ${sessionId}`);
     createPlayerBOTSession(sessionId, socket);
   });
 
@@ -182,12 +212,17 @@ io.on("connection", function (socket) {
   });
 
   socket.on("disconnect", function (data) {
-    console.log("disconnect : " + data);
     const sessionId = socket.id;
     const playerSession = PlayerSession.all[sessionId];
-    if (playerSession == null) return;
+    
+    if (playerSession == null) {
+      logWarn(`Disconnect event for unknown session: ${sessionId}`);
+      return;
+    }
+    
+    logInfo(`Player ${playerSession.name || 'Unnamed'} (${sessionId}) disconnected. Kills: ${playerSession.kills}`);
     playerSession.remove();
-    console.log("Player Session " + sessionId + " removed");
+    
     addCommand(
       [
         "rp",
@@ -199,24 +234,7 @@ io.on("connection", function (socket) {
     );
   });
 
-  socket.on("ms", function (data) {
-
-    const hor = data["hor"];
-    const ver = data["ver"];
-    const ps = PlayerSession.all[socket.id];
-    if (ps == null) return;
-    const turret = ps.turret;
-    turret.hor = hor;
-    turret.ver = ver;
-  });
-
-  socket.on("me", function (data) {
-    const ps = PlayerSession.all[socket.id];
-    if (ps == null) return;
-    const turret = ps.turret;
-    turret.hor = 0;
-    turret.ver = 0;
-  });
+  // Movement is now handled by mouse position - no keyboard movement handlers needed
 
   socket.on("mp", function (data) {
     const ps = PlayerSession.all[socket.id];
@@ -244,12 +262,32 @@ io.on("connection", function (socket) {
   });
 
   socket.on("nickName", function (data) {
-    if (!data["name"]) return;
-    console.log("nickName ");
+    if (!data["name"]) {
+      logWarn(`Empty nickname received from ${socket.id}`);
+      return;
+    }
+    
+    const ps = PlayerSession.all[socket.id];
+    if (ps == null) {
+      logWarn(`Nickname change for unknown session: ${socket.id}`);
+      return;
+    }
+    
+    const oldName = ps.name;
+    ps.name = data["name"];
+    logInfo(`Player ${socket.id} changed name from "${oldName}" to "${ps.name}"`);
+  });
+
+  socket.on("syncPowerUp", function (data) {
     const ps = PlayerSession.all[socket.id];
     if (ps == null) return;
-    ps.name = data["name"];
-    console.log("nickName " + ps.name);
+    
+    // Send current server-side power-up state to client
+    socket.emit("powerUp", {
+      activePowerUp: ps.activePowerUp
+    });
+    
+    // Removed power-up sync debug log for performance
   });
 });
 
@@ -276,41 +314,31 @@ function Turret(x, y, sessionId) {
 
 Turret.prototype = {
   move: function () {
-    let mousePosYTemp
-    ;
-    let mousePosXTemp
-    ;
-    let turretx = this.x;
-    let turrety = this.y;
-    if (this.hor !== 0 && this.ver !== 0) {
-      turretx = this.x + this.hor * this.speed * Math.cos(Math.PI / 4);
-      mousePosXTemp = this.mousePosX + this.hor * this.speed * Math.cos(Math.PI / 4);
-      if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
-        this.mousePosX = mousePosXTemp;
+    // Mouse-follow movement: ship smoothly moves toward mouse cursor position
+    const targetX = this.mousePosX;
+    const targetY = this.mousePosY;
+    
+    // Calculate distance to target
+    const deltaX = targetX - this.x;
+    const deltaY = targetY - this.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Only move if we're not already very close to the target
+    if (distance > 5) {
+      // Smooth movement - move a percentage of the distance each frame
+      const moveSpeed = Math.min(this.speed, distance * 0.15); // Adaptive speed
+      const angle = Math.atan2(deltaY, deltaX);
+      
+      let newX = this.x + Math.cos(angle) * moveSpeed;
+      let newY = this.y + Math.sin(angle) * moveSpeed;
+      
+      // Keep within bounds
+      if (newX - this.baseRadius >= 0 && newX + this.baseRadius <= MAX_X) {
+        this.x = newX;
       }
-      turrety = this.y + this.ver * this.speed * Math.sin(Math.PI / 4);
-      mousePosYTemp = this.mousePosY + this.ver * this.speed * Math.cos(Math.PI / 4);
-      if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {
-        this.mousePosY = mousePosYTemp;
+      if (newY - this.baseRadius >= 0 && newY + this.baseRadius <= MAX_Y) {
+        this.y = newY;
       }
-    } else if (this.hor !== 0) {
-      turretx = this.x + this.hor * this.speed;
-      mousePosXTemp = this.mousePosX + this.hor * this.speed;
-      if (mousePosXTemp >= 0 && mousePosXTemp <= MAX_X) {
-        this.mousePosX = mousePosXTemp;
-      }
-    } else if (this.ver !== 0) {
-      turrety = this.y + this.ver * this.speed;
-      mousePosYTemp = this.mousePosY + this.ver * this.speed;
-      if (mousePosYTemp >= 0 && mousePosYTemp <= MAX_Y) {
-        this.mousePosY = mousePosYTemp;
-      }
-    }
-    if (turretx - this.baseRadius >= 0 && turretx + this.baseRadius <= MAX_X) {
-      this.x = turretx;
-    }
-    if (turrety - this.baseRadius >= 0 && turrety + this.baseRadius <= MAX_Y) {
-      this.y = turrety;
     }
     this.x = Math.round(this.x);
     this.y = Math.round(this.y);
@@ -441,6 +469,7 @@ function PlayerSession(sessionId, turret, isBot, socket) {
   this.canvasWidth = 800;
   this.canvasHeight = 600;
   this.scale = 1;
+  this.activePowerUp = null; // single active power-up: "rockets", "lasers", "spreadShot", "rapidFire", or null
   PlayerSession.all[this.sessionId] = this;
 }
 
@@ -453,6 +482,85 @@ PlayerSession.prototype = {
   isNew: function () {
     const now = new Date();
     return now - this.date < 6000;
+  },
+  findNearestTarget: function() {
+    let nearestTarget = null;
+    let nearestDistance = Infinity;
+    const maxSeekRange = 400; // Auto-aim range
+    const needsShield = this.turret.life < 50; // Prioritize shield regen when health is low
+    
+    // First priority: Shield regeneration asteroids if health is low
+    if (needsShield) {
+      for (const rockId in Rock.all) {
+        const rock = Rock.all[rockId];
+        if (rock.color === "lightblue") { // Shield regeneration asteroids
+          const distance = Math.sqrt(
+            (rock.x - this.turret.x) ** 2 + 
+            (rock.y - this.turret.y) ** 2
+          );
+          
+          if (distance <= maxSeekRange && distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestTarget = { type: 'rock', target: rock, x: rock.x, y: rock.y };
+          }
+        }
+      }
+      
+      // If we found a shield asteroid, return it immediately
+      if (nearestTarget) return nearestTarget;
+    }
+    
+    // Second priority: Enemy players
+    for (const sessionId in PlayerSession.all) {
+      const ps = PlayerSession.all[sessionId];
+      
+      // Skip self, invalid players, dead players, and new players
+      if (!ps || !ps.turret || sessionId === this.sessionId) continue;
+      if (ps.turret.life <= 0 || ps.isNew()) continue;
+      
+      const distance = Math.sqrt(
+        (ps.turret.x - this.turret.x) ** 2 + 
+        (ps.turret.y - this.turret.y) ** 2
+      );
+      
+      // Only consider enemies within range
+      if (distance <= maxSeekRange && distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = { type: 'player', target: ps, x: ps.turret.x, y: ps.turret.y };
+      }
+    }
+    
+    // Third priority: Regular asteroids (only if no enemies found)
+    if (!nearestTarget) {
+      for (const rockId in Rock.all) {
+        const rock = Rock.all[rockId];
+        const distance = Math.sqrt(
+          (rock.x - this.turret.x) ** 2 + 
+          (rock.y - this.turret.y) ** 2
+        );
+        
+        // Only target asteroids at closer range to avoid constantly shooting at distant rocks
+        if (distance <= maxSeekRange * 0.7 && distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestTarget = { type: 'rock', target: rock, x: rock.x, y: rock.y };
+        }
+      }
+    }
+    
+    return nearestTarget;
+  },
+  shouldAutoFire: function() {
+    // Auto-fire if there's a target in range (enemies, shield asteroids, etc.)
+    const targetInfo = this.findNearestTarget();
+    if (targetInfo) {
+      // Update turret angle to aim at target for auto-firing
+      this.turret.angle = Math.atan2(
+        targetInfo.y - this.turret.y, 
+        targetInfo.x - this.turret.x
+      );
+      return true;
+    }
+    return false;
   },
   tick: function () {
     this.wander();
@@ -570,16 +678,96 @@ PlayerSession.prototype = {
     }
     return offset;
   },
+  spawnPowerUpOnDeath: function() {
+    // Spawn a random power-up at the player's death location
+    const powerUpTypes = ['rockets', 'lasers', 'spreadShot', 'rapidFire'];
+    const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+    
+    // Add some randomness to the spawn position so they don't all stack
+    const spawnX = this.turret.x + (Math.random() - 0.5) * 50;
+    const spawnY = this.turret.y + (Math.random() - 0.5) * 50;
+    
+    // Make sure it's within bounds
+    const clampedX = Math.max(20, Math.min(MAX_X - 20, spawnX));
+    const clampedY = Math.max(20, Math.min(MAX_Y - 20, spawnY));
+    
+    const powerUp = new PowerUp(clampedX, clampedY, randomType);
+    
+    // Notify all clients about the new power-up
+    addCommand(["cpu", powerUp.serialize()], [clampedX, clampedY]);
+    
+    logInfo(`${this.name} dropped ${randomType} power-up at (${Math.round(clampedX)}, ${Math.round(clampedY)})`);
+  }
 };
+
+// Power-up weapon configurations
+const WEAPON_CONFIGS = {
+  normal: {
+    speed: 12, // Slower bullets (was 16)
+    size: 3,   // Smaller bullets (was 4)
+    fireRate: 250,
+    count: 1,
+    spread: 0,
+    color: 'inherit'
+  },
+  rockets: {
+    speed: 1.0, // double the speed again
+    size: 8,
+    fireRate: 200, // 4x faster fire rate (800/4)
+    count: 1,
+    spread: 0,
+    color: 'orange'
+  },
+  lasers: {
+    speed: 24,
+    size: 2,
+    fireRate: 150,
+    count: 1,
+    spread: 0,
+    color: 'cyan'
+  },
+  spreadShot: {
+    speed: 14,
+    size: 3,
+    fireRate: 400,
+    count: 5,
+    spread: 0.5,
+    color: 'yellow'
+  },
+  rapidFire: {
+    speed: 18,
+    size: 4,
+    fireRate: 120, // faster fire rate
+    count: 1,
+    spread: 0,
+    color: 'lime'
+  }
+};
+
 initializeStarWarsCharacterNames();
 initializeStarsPositions();
 
 let lastPushTime = new Date();
 
 //Tick the world
+let tickCount = 0;
+let lastPlayerCountLog = new Date();
+
 setInterval(function () {
+  tickCount++;
+  
   if (Object.keys(PlayerSession.all).length < MAX_PLAYERS) {
     createBOT();
+  }
+  
+  // Log player count every 30 seconds
+  const currentTime = new Date();
+  if (currentTime - lastPlayerCountLog > 30000) {
+    const totalPlayers = Object.keys(PlayerSession.all).length;
+    const humanPlayers = Object.values(PlayerSession.all).filter(ps => ps.isBot !== 1).length;
+    const bots = totalPlayers - humanPlayers;
+    logInfo(`Game stats - Total: ${totalPlayers}, Humans: ${humanPlayers}, Bots: ${bots}, Rocks: ${Object.keys(Rock.all).length}, Bullets: ${Object.keys(Bullet.all).length}`);
+    lastPlayerCountLog = currentTime;
   }
   const scoreQueue = [];
   for (let key in PlayerSession.all) {
@@ -587,9 +775,18 @@ setInterval(function () {
       const ps = PlayerSession.all[key];
       const sId = ps.sessionId;
       const turret = ps.turret;
-      if (ps.isBot === 1) ps.tick();
-      else {
+      if (ps.isBot === 1) {
+        ps.tick();
+      } else {
+        // Human player logic
         turret.move();
+        
+        // Auto-fire system for human players
+        if (ps.shouldAutoFire()) {
+          ps.mouseDown = 1;
+        } else {
+          ps.mouseDown = 0;
+        }
       }
       scoreQueue.push({
         n: ps.name,
@@ -624,14 +821,15 @@ setInterval(function () {
   createRocks();
   moveRocks();
   createAllBullets();
+  updatePowerUps();
   emitWorld();
   //console.log("queue length = " + scoreQueue.length);
-  const now = new Date();
-  if (now.getTime() - lastPushTime.getTime() >= 2000) {
+  const pushTime = new Date();
+  if (pushTime.getTime() - lastPushTime.getTime() >= 2000) {
     io.sockets.emit("lb", {
       ss: scoreQueue
     });
-    lastPushTime = now;
+    lastPushTime = pushTime;
   }
 }, 1000 / FPS);
 
@@ -656,8 +854,20 @@ function Bullet(x, y, r, color, sessionId) {
   this.vy = 0;
   this.sessionId = sessionId;
   this.color = color;
+  this.type = "normal"; // power-up weapon type
+  this.targetId = null; // for homing rockets
+  
+  // Rocket physics properties
+  this.thrust = 0.2; // double the thrust again (0.1 * 2)
+  this.maxSpeed = 3.0; // double the max speed again (1.5 * 2)
+  this.turnRate = 0.4; // keep aggressive turning for good homing
+  this.fuelTime = 4000; // 4 seconds of fuel for longer homing
+  this.launchTime = Date.now(); // when rocket was fired
+  this.lastTargetTime = Date.now(); // track when we last found a target
+  this.noTargetTimeout = 5000; // remove after 5 seconds without target
+  // No drag - rockets maintain their speed in space
+  
   this.id = this.getId();
-  //console.log ("bullet id " + this.id);
   Bullet.all[this.id] = this;
 }
 Bullet.all = {};
@@ -686,36 +896,268 @@ Bullet.prototype = {
       vy: this.vy,
       sessionId: this.sessionId,
       color: this.color,
+      type: this.type,
       id: this.id,
     };
   },
   getId: function () {
     return generateUUID();
   },
+  findNearestTarget: function() {
+    let nearestTarget = null;
+    let nearestDistance = Infinity;
+    
+    // Get the shooter to check their health for prioritization
+    const shooter = PlayerSession.all[this.sessionId];
+    const shooterHealth = shooter && shooter.turret ? shooter.turret.life : 100;
+    const needsShield = shooterHealth < 50; // Prioritize shield regen when health is low
+    
+    // First priority: Shield regeneration asteroids if health is low
+    if (needsShield) {
+      for (let rockId in Rock.all) {
+        const rock = Rock.all[rockId];
+        if (rock.color === "lightblue") { // Shield regeneration asteroids
+          const dx = rock.x - this.x;
+          const dy = rock.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < nearestDistance) {
+            nearestDistance = dist;
+            nearestTarget = { type: 'rock', target: rock, x: rock.x, y: rock.y };
+          }
+        }
+      }
+      
+      // If we found a shield asteroid, return it immediately
+      if (nearestTarget) return nearestTarget;
+    }
+    
+    // Second priority: Regular enemy players
+    for (let sessionId in PlayerSession.all) {
+      const ps = PlayerSession.all[sessionId];
+      if (!ps || !ps.turret) continue;
+      if (ps.sessionId === this.sessionId) continue; // don't target self
+      if (ps.turret.life <= 0 || ps.isNew()) continue; // skip dead/new players
+      
+      const dx = ps.turret.x - this.x;
+      const dy = ps.turret.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist < nearestDistance) {
+        nearestDistance = dist;
+        nearestTarget = { type: 'player', target: ps, x: ps.turret.x, y: ps.turret.y };
+      }
+    }
+    
+    // Third priority: Any asteroids (for general destruction)
+    for (let rockId in Rock.all) {
+      const rock = Rock.all[rockId];
+      const dx = rock.x - this.x;
+      const dy = rock.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist < nearestDistance) {
+        nearestDistance = dist;
+        nearestTarget = { type: 'rock', target: rock, x: rock.x, y: rock.y };
+      }
+    }
+    
+    return nearestTarget;
+  },
+  updateHoming: function() {
+    if (this.type !== "rockets") return; // only rockets home
+    
+    const currentTime = Date.now();
+    const age = currentTime - this.launchTime;
+    const hasFuel = age < this.fuelTime;
+    
+    // Check for target timeout - remove rocket if no target found for too long
+    const timeSinceLastTarget = currentTime - this.lastTargetTime;
+    if (timeSinceLastTarget > this.noTargetTimeout) {
+      logInfo(`Rocket ${this.id} removed - no target found for ${Math.round(timeSinceLastTarget/1000)}s`);
+      this.remove();
+      return;
+    }
+    
+    if (hasFuel) {
+      // Recalculate target every frame for dynamic homing
+      const targetInfo = this.findNearestTarget();
+      const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      
+      if (targetInfo) {
+        // Update last target time since we found one
+        this.lastTargetTime = currentTime;
+        const targetName = targetInfo.type === 'player' ? targetInfo.target.name : 
+                          (targetInfo.target.color === 'lightblue' ? 'Shield Asteroid' : 'Asteroid');
+        // Removed debug log for performance
+      } else {
+        logWarn(`Rocket ${this.id} found NO targets! Time without target: ${Math.round(timeSinceLastTarget/1000)}s`);
+      }
+      
+      if (targetInfo) {
+        // Calculate desired direction to target
+        const dx = targetInfo.x - this.x;
+        const dy = targetInfo.y - this.y;
+        const targetAngle = Math.atan2(dy, dx);
+        
+        // Current movement direction (or rocket facing if speed is very low)
+        const currentAngle = currentSpeed > 0.5 ? 
+          Math.atan2(this.vy, this.vx) : 
+          Math.atan2(this.vy || 1, this.vx || 0);
+        
+        // Calculate angle difference
+        let angleDiff = targetAngle - currentAngle;
+        
+        // Normalize angle difference to [-π, π]
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        
+        // Turn rate decreases with speed but not as dramatically
+        const speedFactor = Math.max(0.7, 1 - (currentSpeed / this.maxSpeed) * 0.3);
+        const effectiveTurnRate = this.turnRate * speedFactor;
+        
+        // Limit turn rate
+        if (Math.abs(angleDiff) > effectiveTurnRate) {
+          angleDiff = angleDiff > 0 ? effectiveTurnRate : -effectiveTurnRate;
+        }
+        
+        // Calculate thrust direction (where rocket wants to accelerate)
+        const thrustAngle = currentAngle + angleDiff;
+        
+        // Apply thrust acceleration
+        const thrustX = this.thrust * Math.cos(thrustAngle);
+        const thrustY = this.thrust * Math.sin(thrustAngle);
+        
+        const oldVx = this.vx;
+        const oldVy = this.vy;
+        this.vx += thrustX;
+        this.vy += thrustY;
+        
+        const distanceToTarget = Math.sqrt(dx * dx + dy * dy);
+        const angleChange = Math.abs(angleDiff);
+        // Removed verbose rocket movement debug log for performance
+      } else {
+        // No target - just thrust forward
+        const currentAngle = Math.atan2(this.vy || 1, this.vx || 0);
+        this.vx += this.thrust * Math.cos(currentAngle);
+        this.vy += this.thrust * Math.sin(currentAngle);
+      }
+    }
+    // No drag applied - rockets maintain their speed even without fuel
+    
+    // Cap maximum speed
+    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (currentSpeed > this.maxSpeed) {
+      const scale = this.maxSpeed / currentSpeed;
+      this.vx *= scale;
+      this.vy *= scale;
+    }
+  },
 };
 
-function PowerUp(
-  xCoord,
-  yCoord,
-  healthBonus,
-  bulletSpeedBonus,
-  shipSpeedBonus
-) {
-  this.x = xCoord;
-  this.y = yCoord;
-  this.hb = healthBonus;
-  this.bsb = bulletSpeedBonus;
-  this.ssb = shipSpeedBonus;
+function PowerUp(x, y, type) {
+  this.x = x;
+  this.y = y;
+  this.type = type; // "rockets", "lasers", "spreadShot", "rapidFire"
   this.id = generateUUID();
+  this.spawnTime = Date.now();
+  this.lifeTime = 15000; // 15 seconds before disappearing
+  this.size = 12; // collision radius
+  this.bobOffset = Math.random() * Math.PI * 2; // for floating animation
+  
+  // Slow drifting movement in space
+  const driftSpeed = 0.3 + Math.random() * 0.4; // 0.3 to 0.7 pixels per frame
+  const driftAngle = Math.random() * Math.PI * 2; // random direction
+  this.vx = driftSpeed * Math.cos(driftAngle);
+  this.vy = driftSpeed * Math.sin(driftAngle);
+  this.rotationSpeed = (Math.random() - 0.5) * 0.02; // slow rotation
+  this.rotation = 0;
+  
+  PowerUp.all[this.id] = this;
 }
 
-PowerUp.all = [];
+PowerUp.all = {};
 
 PowerUp.prototype = {
   remove: function () {
     delete PowerUp.all[this.id];
+    addCommand(["rpu", { id: this.id }], [this.x, this.y]);
   },
-  move: function () {},
+  update: function() {
+    // Check if expired
+    if (Date.now() - this.spawnTime > this.lifeTime) {
+      this.remove();
+      return;
+    }
+    
+    // Update position (drifting in space)
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.rotationSpeed;
+    
+    // Bounce off world boundaries (soft bounce)
+    if (this.x <= this.size || this.x >= MAX_X - this.size) {
+      this.vx *= -0.8; // reverse direction with some energy loss
+      this.x = Math.max(this.size, Math.min(MAX_X - this.size, this.x));
+    }
+    if (this.y <= this.size || this.y >= MAX_Y - this.size) {
+      this.vy *= -0.8; // reverse direction with some energy loss  
+      this.y = Math.max(this.size, Math.min(MAX_Y - this.size, this.y));
+    }
+    
+    // Send position update to clients (every few frames to reduce network traffic)
+    if (Math.random() < 0.1) { // 10% chance each frame
+      addCommand(["upu", {
+        id: this.id,
+        x: this.x,
+        y: this.y,
+        rotation: this.rotation
+      }], [this.x, this.y]);
+    }
+    
+    // Check collision with all players
+    for (let sessionId in PlayerSession.all) {
+      const ps = PlayerSession.all[sessionId];
+      if (ps.isNew()) continue; // skip invulnerable new players
+      
+      const dist = distance(this.x, this.y, ps.turret.x, ps.turret.y);
+      if (dist <= this.size + ps.turret.baseRadius) {
+        // Player picked up power-up!
+        this.applyToPlayer(ps);
+        this.remove();
+        return;
+      }
+    }
+  },
+  applyToPlayer: function(ps) {
+    const oldPowerUp = ps.activePowerUp;
+    ps.activePowerUp = this.type; // Replace current power-up
+    
+    // Send power-up update to client
+    if (ps.socket != null) {
+      ps.socket.emit("powerUp", {
+        activePowerUp: ps.activePowerUp
+      });
+    }
+    
+    if (oldPowerUp !== ps.activePowerUp) {
+      logInfo(`Player ${ps.name} picked up ${this.type} power-up (replaced ${oldPowerUp || 'normal'})`);
+    }
+  },
+  serialize: function() {
+    return {
+      id: this.id,
+      x: this.x,
+      y: this.y,
+      type: this.type,
+      size: this.size,
+      bobOffset: this.bobOffset,
+      vx: this.vx,
+      vy: this.vy,
+      rotation: this.rotation,
+      rotationSpeed: this.rotationSpeed
+    };
+  }
 };
 
 // Constructor
@@ -838,8 +1280,7 @@ function createRocks() {
           starty = (MAX_Y - 1) * Math.random();
           break;
       }
-      //console.log("creating rock");
-      const rock = new Rock(startx, starty, 90 * Math.random() + 20);
+      const rock = new Rock(startx, starty, 45 * Math.random() + 15); // Smaller asteroids: 15-60 instead of 20-110
       rock.color = rndColor();
       const angle = Math.atan2(MAX_Y / 2 - rock.y, MAX_X / 2 - rock.x);
       const rockSpeed = 80 / rock.r;
@@ -848,6 +1289,7 @@ function createRocks() {
       if (Math.random() > 0.5) {
         rock.spinDirection = -1;
       }
+      // Removed rock creation debug log for performance
       rockDate = currDate;
     }
   }
@@ -895,6 +1337,7 @@ function rockCollideTurret(rock, ps) {
   if (distance(ps.turret.x, ps.turret.y, rock.x, rock.y) <= 5 + rock.r) {
     const damage = rock.r;
     if (ps.turret.life - damage <= 0) {
+      logInfo(`${ps.name} was killed by asteroid collision (damage: ${Math.round(damage)})`);
       addCommand(
         [
           "rp",
@@ -904,14 +1347,10 @@ function rockCollideTurret(rock, ps) {
         ],
         [ps.turret.x, ps.turret.y]
       );
-      //console.log("remove player 2 " + ps.sessionId);
       ps.remove();
     } else {
       ps.turret.life = ps.turret.life - damage;
-      //io.sockets.emit("damagePlayer", {
-      //    "sessionId": ps.sessionId,
-      //   "life": ps.turret.life
-      //});
+      // Removed asteroid collision debug log for performance
       addCommand(
         [
           "damagePlayer",
@@ -934,6 +1373,12 @@ function bulletCollideTurret(bullet) {
       if (ps.isNew()) {
         continue;
       }
+      
+      // Prevent rockets from hitting their own shooter
+      if (bullet.type === "rockets" && bullet.sessionId === ps.sessionId) {
+        continue;
+      }
+      
       if (
         distance(ps.turret.x, ps.turret.y, bullet.x, bullet.y) <=
         bullet.r + 5
@@ -943,8 +1388,18 @@ function bulletCollideTurret(bullet) {
         if (shooterSession != null) {
           shooterSession.kills += 1;
           shooterSession.turret.life = 100;
+          logInfo(`${shooterSession.name} killed ${ps.name} with bullet. Shooter now has ${shooterSession.kills} kills`);
         }
         if (ps.turret.life - damage <= 0) {
+          // Only spawn power-up if killed by another player
+          if (shooterSession != null) {
+            ps.spawnPowerUpOnDeath(); // Spawn power-up where killed player died
+          }
+          
+          // Store power-up for potential respawn (if they had one)
+          const preservedPowerUp = ps.activePowerUp;
+          logInfo(`Player ${ps.name} died with power-up: ${preservedPowerUp || 'none'}`);
+          
           addCommand(
             [
               "rp",
@@ -991,7 +1446,11 @@ function turretCollideTurret(turret) {
         const damage = 20;
         if (ps.turret.life - damage <= 0) {
           const shooterSession = PlayerSession.all[turret.sessionId];
-          if (shooterSession != null) shooterSession.kills += 1;
+          if (shooterSession != null) {
+            shooterSession.kills += 1;
+            logInfo(`${shooterSession.name} killed ${ps.name} by ramming. Killer now has ${shooterSession.kills} kills`);
+          }
+          ps.spawnPowerUpOnDeath(); // Spawn power-up where rammed player died
           addCommand(
             [
               "rp",
@@ -1020,6 +1479,8 @@ function turretCollideTurret(turret) {
         if (playerSession == null) continue;
         if (playerSession.turret.life - damage <= 0) {
           ps.kills += 1;
+          logInfo(`${ps.name} killed ${playerSession.name} by ramming. Killer now has ${ps.kills} kills`);
+          playerSession.spawnPowerUpOnDeath(); // Spawn power-up where killed player died
           addCommand(
             [
               "rp",
@@ -1110,25 +1571,38 @@ function moveBullets() {
     if (Bullet.all.hasOwnProperty(k)) {
       const bullet = Bullet.all[k];
       if (bullet == null) continue;
-      if (
-        distance(bullet.x, bullet.y, bullet.ox, bullet.oy) > BULLET_DISTANCE
-      ) {
+      
+      // Check max distance (rockets get extended range)
+      const maxDistance = bullet.type === "rockets" ? BULLET_DISTANCE * 2 : BULLET_DISTANCE;
+      if (distance(bullet.x, bullet.y, bullet.ox, bullet.oy) > maxDistance) {
         bullet.remove();
+        continue;
       }
+      
+      // Update homing for rockets BEFORE moving
+      bullet.updateHoming();
+      
+      // Move bullet
       bullet.x += bullet.vx;
       bullet.y += bullet.vy;
-      //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
+      
+      // Send position update to clients
       addCommand(
         ["ub", {
           id: bullet.id,
           x: bullet.x,
-          y: bullet.y
+          y: bullet.y,
+          vx: bullet.vx, // include velocity for client-side rocket rendering
+          vy: bullet.vy
         }],
         [bullet.x, bullet.y]
       );
-      //console.log("id : " + bullet.id + ", x : " + bullet.x + ", y : " + bullet.y);
+      
+      // Check collisions
       bulletCollideRock(bullet);
       bulletCollideTurret(bullet);
+      
+      // Remove if out of bounds
       if (
         bullet.x <= 0 ||
         bullet.y <= 0 ||
@@ -1142,33 +1616,85 @@ function moveBullets() {
 }
 
 function createBullets(sessionId) {
-  //console.log("bullet session id " + sessionId);
   const now = new Date();
   const ps = PlayerSession.all[sessionId];
   const turret = ps.turret;
-  const color = turret.color;
-  const numTurrets = Math.min(1 + ps.kills, 12);
-  if (!ps.isNew() && ps.mouseDown === 1 && now - ps.mouseDate > 250) {
-    let bulletAngle = turret.angle - numTurrets * (0.0174533 / 2);
-    for (let i = 0; i < numTurrets; i++) {
-      const x = turret.recoilX + turret.length * Math.cos(turret.angle);
-      const y = turret.recoilY + turret.length * Math.sin(turret.angle);
-      const bullet = new Bullet(x, y, 4, color, sessionId);
-      const speed = 16;
-      bullet.vx = speed * Math.cos(bulletAngle);
-      bullet.vy = speed * Math.sin(bulletAngle);
-      turret.recoil = 5;
-      ps.mouseDate = now;
-      addCommand(["cb", bullet.serialize()], [bullet.x, bullet.y]);
-      bulletAngle += 0.0174533;
-    }
+  
+  if (!ps || ps.isNew() || ps.mouseDown !== 1) {
+    return;
   }
+  
+  // Simple weapon system: Use active power-up or default to normal
+  const activeWeapon = ps.activePowerUp || "normal";
+  const weaponConfig = WEAPON_CONFIGS[activeWeapon];
+  
+  // Debug logging for desync issues
+  if (ps.activePowerUp && activeWeapon === "normal") {
+    // Removed desync warning for performance (can be verbose)
+  }
+  
+  // Check fire rate
+  if (now - ps.mouseDate <= weaponConfig.fireRate) {
+    return;
+  }
+  
+  // More detailed logging every 10 shots to track state
+  if (!ps.debugShotCount) ps.debugShotCount = 0;
+  ps.debugShotCount++;
+  if (ps.debugShotCount % 10 === 0) {
+    // Removed weapon state debug log for performance
+  }
+  
+  // Calculate bullet properties
+  const bulletColor = weaponConfig.color === 'inherit' ? turret.color : weaponConfig.color;
+  
+  // Calculate number of bullets
+  let numBullets = weaponConfig.count;
+  if (activeWeapon === "normal") {
+    numBullets = Math.min(1 + Math.floor(ps.kills / 3), 5); // Scale with kills but cap at 5
+  }
+  
+  // Calculate spread and starting angle
+  const spread = weaponConfig.spread;
+  let bulletAngle = turret.angle - (numBullets - 1) * spread / 2;
+  
+  // Create bullets
+  for (let i = 0; i < numBullets; i++) {
+    const x = turret.recoilX + turret.length * Math.cos(turret.angle);
+    const y = turret.recoilY + turret.length * Math.sin(turret.angle);
+    const bullet = new Bullet(x, y, weaponConfig.size, bulletColor, sessionId);
+    
+    bullet.vx = weaponConfig.speed * Math.cos(bulletAngle);
+    bullet.vy = weaponConfig.speed * Math.sin(bulletAngle);
+    bullet.type = activeWeapon;
+    
+    // Removed bullet creation debug log for performance
+    
+    // Send bullet creation command
+    const bulletData = bullet.serialize();
+    bulletData.type = activeWeapon;
+    addCommand(["cb", bulletData], [bullet.x, bullet.y]);
+    
+    bulletAngle += spread;
+  }
+  
+  turret.recoil = 5;
+  ps.mouseDate = now;
 }
 
 function createAllBullets() {
   for (let sessionId in PlayerSession.all) {
     if (PlayerSession.all.hasOwnProperty(sessionId)) {
       createBullets(sessionId);
+    }
+  }
+}
+
+function updatePowerUps() {
+  for (let id in PowerUp.all) {
+    if (PowerUp.all.hasOwnProperty(id)) {
+      const powerUp = PowerUp.all[id];
+      powerUp.update();
     }
   }
 }

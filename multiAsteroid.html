@@ -153,6 +153,11 @@
         var starsCanvas = null;
         var starsCtx = null;
         var scale = 1;
+        var activePowerUp = null; // current active power-up: "rockets", "lasers", "spreadShot", "rapidFire", or null
+        var deletePowerUpSet = {};
+        var PowerUp = {
+            all: {}
+        };
 
         function updateScale() {
             var scaleX = canvas.width / WINDOW_X_SIZE;
@@ -279,6 +284,18 @@
                 executeCommands(data["updateWorld"]);
                 //drawWorld();
             });
+
+            socket.on("powerUp", function(data) {
+                // Update player's active power-up
+                var oldPowerUp = activePowerUp;
+                activePowerUp = data["activePowerUp"];
+                
+                if (oldPowerUp !== activePowerUp) {
+                    console.log("Power-up changed from " + (oldPowerUp || "normal") + " to " + (activePowerUp || "normal"));
+                } else {
+                    console.log("Power-up state sync: " + (activePowerUp || "normal"));
+                }
+            });
         }
 
         function removePlayer(data) {
@@ -287,6 +304,8 @@
                 ps.remove();
                 delete deletePlayerSessionSet[data];
                 if (data == sessionId) {
+                    console.log("Player died/removed - preserving power-up state: " + (activePowerUp || "normal"));
+                    // DON'T reset activePowerUp here - let server manage it
                     socket.disconnect();
                     gameOver = 1;
                     Rock.all = {};
@@ -327,6 +346,7 @@
             var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
             bullet.vx = data["vx"];
             bullet.vy = data["vy"];
+            bullet.type = data["type"] || "normal";
         };
 
         function removeBullet(data) {
@@ -343,6 +363,38 @@
             if(Rock.all[data] != null) {
                 delete Rock.all[data];
                 delete deleteRockSet[data];
+            }
+        };
+
+        function createPowerUp(data) {
+            var powerUp = {
+                id: data.id,
+                x: data.x,
+                y: data.y,
+                type: data.type,
+                size: data.size,
+                bobOffset: data.bobOffset,
+                vx: data.vx || 0,
+                vy: data.vy || 0,
+                rotation: data.rotation || 0,
+                rotationSpeed: data.rotationSpeed || 0
+            };
+            PowerUp.all[data.id] = powerUp;
+        };
+
+        function removePowerUp(data) {
+            if (PowerUp.all[data] != null) {
+                delete PowerUp.all[data];
+                delete deletePowerUpSet[data];
+            }
+        };
+
+        function updatePowerUp(data) {
+            var powerUp = PowerUp.all[data.id];
+            if (powerUp != null) {
+                powerUp.x = data.x;
+                powerUp.y = data.y;
+                if (data.rotation !== undefined) powerUp.rotation = data.rotation;
             }
         };
 
@@ -429,6 +481,21 @@
                 if (x < -100 || x> 900 ||y < -100 || y > 700) 
                     rock.remove();
             }
+
+            // Clean up power-ups marked for deletion
+            for (var key in deletePowerUpSet) {
+                removePowerUp(key);
+            }
+            
+            // Remove power-ups that drifted off screen (they'll respawn from server)
+            for (var key in PowerUp.all) {
+                var powerUp = PowerUp.all[key];
+                var x = powerUp.x + getXOffset();
+                var y = powerUp.y + getYOffset();
+                if (x < -200 || x > 1000 || y < -200 || y > 800) {
+                    delete PowerUp.all[key]; // just remove locally, server will manage
+                }
+            }
         }
 
         function executeCommand(command) {
@@ -455,6 +522,12 @@
                 case "rmr":
                     deleteRockSet[command[1]["id"]] = 1;
                     break;
+                case "cpu":
+                    createPowerUp(command[1]);
+                    break;
+                case "rpu":
+                    deletePowerUpSet[command[1]["id"]] = 1;
+                    break;
                 case "tm":
                     turretMove(command[1]);
                     break;
@@ -463,6 +536,9 @@
                     break;
                 case "ub":
                     Bullet.moveBullet(command[1]);
+                    break;
+                case "upu":
+                    updatePowerUp(command[1]);
                     break;
             }
         }
@@ -504,26 +580,6 @@
 
         window.addEventListener('keydown', function(event) {
             switch (event.keyCode) {
-                case 87:
-                    /* Up arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        ver = -1;
-                    break;
-                case 83:
-                    /* Down arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        ver = 1;
-                    break;
-                case 65:
-                    /* Left arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        hor = -1;
-                    break;
-                case 68:
-                    /* Right arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        hor = 1;
-                    break;
                 case 82:
                     /* Restart */
                     resetGame();
@@ -538,59 +594,9 @@
                         pauseGame();
                     break;
             }
-            //if (event.preventDefault) { event.preventDefault(); }
-            //if (event.stopPropagation) { event.stopPropagation(); }
-            //Locally move the turret
-            //alert("sessionId " + sessionId);
-            //var ps = PlayerSession.all[sessionId];
-            //if (hor != 0 && ver != 0) {
-            //    var speed = ps.turret.speed * Math.cos(Math.PI / 4);
-            //    ps.turret.x = Math.round(ps.turret.x + hor * speed);
-            //    ps.turret.y = Math.round(ps.turret.y + hor * speed);
-            //} else if (hor == 0 && ver != 0) {
-            //    ps.turret.y = Math.round(ps.turret.y + hor * ps.turret.speed);
-            //} else if (ver == 0 && hor != 0) {
-            //    ps.turret.x = Math.round(ps.turret.x + hor * ps.turret.speed);
-            //}
-            if (socket != null)
-                socket.emit("ms", {
-                    "sessionId": sessionId,
-                    "hor": hor,
-                    "ver": ver
-                }); 
-            //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
         }, true);
-        window.addEventListener('keyup', function(event) {
-            switch (event.keyCode) {
-                case 87:
-                    /* Up arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        ver = 0;
-                    break;
-                case 83:
-                    /* Down arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        ver = 0;
-                    break;
-                case 65:
-                    /* Left arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        hor = 0;
-                    break;
-                case 68:
-                    /* Right arrow was pressed */
-                    if (gamePaused == 0 && gameOver == 0)
-                        hor = 0;
-                    break;
-            }
-            //if (event.preventDefault) { event.preventDefault(); }
-            //if (event.stopPropagation) { event.stopPropagation(); }
-            if (socket != null) 
-                socket.emit("me", {
-                    "sessionId": sessionId
-                }); 
-            //debug("turret x : " + PlayerSession.all[sessionId].turret.x + ", y : " + PlayerSession.all[sessionId].turret.y);
-        }, true);
+        // No keyup handlers needed for mouse-only movement
+        // Pause/restart/start keys are handled in keydown only
 
         function drawTurrets() {
             for (var key in PlayerSession.all) {
@@ -602,75 +608,212 @@
                 }
             }
         }
+        
+        // Draw engine exhaust trails
+        function drawEngineTrails(turret, isYou) {
+            var speed = Math.sqrt((turret.x - (turret.lastX || turret.x)) ** 2 + (turret.y - (turret.lastY || turret.y)) ** 2);
+            var thrustIntensity = Math.min(speed * 0.3, 1);
+            
+            if (thrustIntensity > 0.05) {
+                var engineGradient = ctx.createLinearGradient(-8, 0, -12 - thrustIntensity * 8, 0);
+                engineGradient.addColorStop(0, "rgba(100, 200, 255, 0.9)");
+                engineGradient.addColorStop(0.3, "rgba(255, 150, 50, 0.8)");
+                engineGradient.addColorStop(0.7, "rgba(255, 100, 0, 0.6)");
+                engineGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+                
+                ctx.fillStyle = engineGradient;
+                
+                // Left engine trail
+                ctx.beginPath();
+                ctx.moveTo(-8, -2.5);
+                ctx.lineTo(-12 - thrustIntensity * 8, -1.5);
+                ctx.lineTo(-12 - thrustIntensity * 8, 1.5);
+                ctx.lineTo(-8, 2.5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Right engine trail (correctly positioned)
+                ctx.beginPath();
+                ctx.moveTo(-8, 2.5);
+                ctx.lineTo(-12 - thrustIntensity * 8, 1.5);
+                ctx.lineTo(-12 - thrustIntensity * 8, -1.5);
+                ctx.lineTo(-8, -2.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Store position for next frame
+            turret.lastX = turret.x;
+            turret.lastY = turret.y;
+        }
+        
+        // Draw main ship hull
+        function drawShipHull(turret, healthRatio, isYou) {
+            var baseColor = turret.color;
+            var size = turret.baseRadius;
+            
+            // Main hull gradient based on health
+            var hullGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            hullGradient.addColorStop(0, lightenColor(baseColor, 40));
+            hullGradient.addColorStop(0.6, baseColor);
+            hullGradient.addColorStop(1, darkenColor(baseColor, 30));
+            
+            // Main ship body (elongated ellipse)
+            ctx.fillStyle = hullGradient;
+            ctx.strokeStyle = darkenColor(baseColor, 50);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size * 1.4, size * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Wing sections
+            ctx.fillStyle = darkenColor(baseColor, 20);
+            ctx.strokeStyle = darkenColor(baseColor, 40);
+            ctx.lineWidth = 1;
+            
+            // Left wing
+            ctx.beginPath();
+            ctx.ellipse(-2, -size * 0.7, size * 0.6, size * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Right wing
+            ctx.beginPath();
+            ctx.ellipse(-2, size * 0.7, size * 0.6, size * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Engine nozzles
+            ctx.fillStyle = "#444";
+            ctx.strokeStyle = "#222";
+            ctx.beginPath();
+            ctx.ellipse(-8, -3, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.ellipse(-8, 3, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        // Draw ship details and cockpit
+        function drawShipDetails(turret, healthRatio, isYou, playerName) {
+            var size = turret.baseRadius;
+            
+            // Cockpit/bridge
+            var cockpitGradient = ctx.createRadialGradient(2, 0, 0, 2, 0, size * 0.5);
+            cockpitGradient.addColorStop(0, "rgba(100, 200, 255, 0.8)");
+            cockpitGradient.addColorStop(0.7, "rgba(50, 150, 255, 0.6)");
+            cockpitGradient.addColorStop(1, "rgba(0, 100, 200, 0.4)");
+            
+            ctx.fillStyle = cockpitGradient;
+            ctx.strokeStyle = "#1a4d80";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(2, 0, size * 0.5, size * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Front nose/cannon mount
+            ctx.fillStyle = "#666";
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(size * 1.4, 0);
+            ctx.lineTo(size * 1.1, -3);
+            ctx.lineTo(size * 0.8, -2);
+            ctx.lineTo(size * 0.8, 2);
+            ctx.lineTo(size * 1.1, 3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Muzzle flash when firing
+            if (turret.recoil > 0) {
+                var flashGradient = ctx.createRadialGradient(size * 1.4, 0, 0, size * 1.4, 0, 8);
+                flashGradient.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+                flashGradient.addColorStop(0.4, "rgba(255, 200, 100, 0.7)");
+                flashGradient.addColorStop(0.8, "rgba(255, 100, 0, 0.5)");
+                flashGradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+                
+                ctx.fillStyle = flashGradient;
+                ctx.beginPath();
+                ctx.arc(size * 1.4, 0, 6 + Math.random() * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Health indicator lights
+            if (isYou) {
+                ctx.fillStyle = healthRatio > 0.6 ? "#00ff00" : 
+                              healthRatio > 0.3 ? "#ffff00" : "#ff0000";
+                ctx.beginPath();
+                ctx.arc(-3, -5, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(-3, 5, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Player name if not you
+            if (!isYou && playerName) {
+                ctx.save();
+                ctx.rotate(-turret.angle); // Unrotate for text
+                ctx.fillStyle = "white";
+                ctx.strokeStyle = "black";
+                ctx.font = "8px Arial";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 0.5;
+                ctx.strokeText(playerName, 0, -size * 1.5);
+                ctx.fillText(playerName, 0, -size * 1.5);
+                ctx.restore();
+            }
+        }
+        
+        // Helper functions for color manipulation
+        function lightenColor(color, percent) {
+            var num = parseInt(color.replace("#",""), 16);
+            var amt = Math.round(2.55 * percent);
+            var R = (num >> 16) + amt;
+            var G = (num >> 8 & 0x00FF) + amt;
+            var B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+        }
+        
+        function darkenColor(color, percent) {
+            var num = parseInt(color.replace("#",""), 16);
+            var amt = Math.round(2.55 * percent);
+            var R = (num >> 16) - amt;
+            var G = (num >> 8 & 0x00FF) - amt;
+            var B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+        }
+        
         // Draws turret
         function drawTurret(ps, isYou, isGhost) {
             var turret = ps.turret;
-            // Draw base
+            var healthRatio = turret.life / 100;
+            var alpha = !isYou ? transparency : 1;
+            
             ctx.save();
             ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
-            //ctx.fillStyle = turret.color;
-            var gradient = ctx.createRadialGradient(0, 0, turret.baseRadius * turret.life / 100, 0, 0, 0);
-            gradient.addColorStop(1, "black");
-            gradient.addColorStop(0, turret.color);
-            ctx.fillStyle = gradient;
-            ctx.strokeStyle = "black";
-            if (!isYou)
-                ctx.globalAlpha = transparency;
-            else ctx.globalAlpha = 1;
-            ctx.beginPath();
-            var endAngle = Math.PI * 2;
-            ctx.arc(0, 0, turret.baseRadius * turret.life / 100, 0, endAngle, true);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
+            ctx.rotate(turret.angle);
+            ctx.globalAlpha = alpha;
+            
+            // Draw engine trails first (behind ship)
+            drawEngineTrails(turret, isYou);
+            
+            // Draw main ship hull
+            drawShipHull(turret, healthRatio, isYou);
+            
+            // Draw ship details and cockpit
+            drawShipDetails(turret, healthRatio, isYou, ps.name);
+            
             ctx.restore();
-            // Draw inner base
-            ctx.save();
-            ctx.translate(getXOffset() + turret.x, getYOffset() + turret.y);
-            ctx.fillStyle = "white";
-            ctx.strokeStyle = "black";
-            if (!isYou)
-                ctx.globalAlpha = transparency;
-            else ctx.globalAlpha = 1;
-            ctx.beginPath();
-            ctx.arc(0, 0, turret.baseRadius / 2, 0, endAngle, true);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-
-            // Draw Gun
-            ctx.save();
-            var angle1 = turret.angle + Math.PI / 2;
-            var x1 = turret.recoilX + 2.5 * Math.cos(angle1);
-            var y1 = turret.recoilY + 2.5 * Math.sin(angle1);
-            var x2 = x1 + turret.length * Math.cos(turret.angle);
-            var y2 = y1 + turret.length * Math.sin(turret.angle);
-            var angle3 = turret.angle - Math.PI / 2;
-            var x3 = x2 + 5 * Math.cos(angle3);
-            var y3 = y2 + 5 * Math.sin(angle3);
-            var angle4 = angle3 - Math.PI / 2;
-            var x4 = x3 + turret.length * Math.cos(angle4);
-            var y4 = y3 + turret.length * Math.sin(angle4);
-            var x5 = x4 + 2.5 * Math.cos(angle1);
-            var y5 = y4 + 2.5 * Math.sin(angle1);
-            ctx.lineWidth = 1;
-            ctx.fillStyle = "silver";
-            ctx.strokeStyle = "black";
-            //if (!isYou) alert("got here");
-            ctx.globalAlpha = 0.2;
-            ctx.beginPath();
-            //if (isYou)
-            //alert(x1 + "," + y1 + "," + x2 + "," + y2);
-            ctx.moveTo(getXOffset() + turret.recoilX, getYOffset() + turret.recoilY);
-            ctx.lineTo(getXOffset() + x1, getYOffset() + y1);
-            ctx.lineTo(getXOffset() + x2, getYOffset() + y2);
-            ctx.lineTo(getXOffset() + x3, getYOffset() + y3);
-            ctx.lineTo(getXOffset() + x4, getYOffset() + y4);
-            ctx.lineTo(getXOffset() + x5, getYOffset() + y5);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
+            
+            // Handle recoil animation for firing effects
             if (turret.recoil > 0) {
                 turret.recoil = turret.recoil - 1;
             }
@@ -747,7 +890,7 @@
             ctx.save();
             ctx.font = "6pt Courier New";
             ctx.fillStyle = "greenyellow";
-            ctx.fillText("INSTRUCTIONS : \u2190 (a), \u2192 (d), \u2191 (w), \u2193 (s), Shoot (Left Mouse Button)", canvas.width/2/scale - 200, 25);
+            ctx.fillText("INSTRUCTIONS : Move mouse to fly, auto-fires at enemies & shield asteroids | R=Restart, P=Pause", canvas.width/2/scale - 200, 25);
             ctx.restore();
         }
 
@@ -797,6 +940,126 @@
             }
             ctx.restore();
          }
+
+        function drawPlayerPowerUps() {
+            ctx.save();
+            ctx.font = "8pt Courier New";
+            
+            if (activePowerUp) {
+                var color = getPowerUpColor(activePowerUp);
+                var icon = getPowerUpIcon(activePowerUp);
+                var name = getPowerUpName(activePowerUp);
+                
+                ctx.fillStyle = color;
+                ctx.fillText("ACTIVE WEAPON:", 10, 50);
+                ctx.font = "12pt Courier New";
+                ctx.fillText(icon + " " + name, 10, 70);
+            } else {
+                ctx.fillStyle = "white";
+                ctx.fillText("WEAPON: Normal", 10, 50);
+            }
+            
+            ctx.restore();
+        }
+
+        function getPowerUpName(type) {
+            switch(type) {
+                case "rockets": return "ROCKETS";
+                case "lasers": return "LASERS"; 
+                case "spreadShot": return "SPREAD SHOT";
+                case "rapidFire": return "RAPID FIRE";
+                default: return "NORMAL";
+            }
+        }
+
+        function getPowerUpIcon(type) {
+            switch(type) {
+                case "rockets": return "🚀";
+                case "lasers": return "⚡"; 
+                case "spreadShot": return "💥";
+                case "rapidFire": return "⚡⚡";
+                default: return "";
+            }
+        }
+
+        function drawWorldPowerUps() {
+            var time = Date.now() * 0.001; // time in seconds
+            
+            for (var key in PowerUp.all) {
+                var powerUp = PowerUp.all[key];
+                
+                ctx.save();
+                ctx.translate(getXOffset() + powerUp.x, getYOffset() + powerUp.y);
+                
+                // Floating/bobbing animation
+                var bob = Math.sin(time * 2 + powerUp.bobOffset) * 3;
+                ctx.translate(0, bob);
+                
+                // Rotation
+                ctx.rotate(powerUp.rotation);
+                
+                // Glow effect
+                ctx.shadowColor = getPowerUpColor(powerUp.type);
+                ctx.shadowBlur = 15;
+                
+                // Draw power-up based on type
+                drawPowerUpIcon(powerUp.type, powerUp.size);
+                
+                ctx.restore();
+                
+                // Draw pickup text
+                ctx.save();
+                ctx.font = "5pt Courier New";
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(powerUp.type.toUpperCase(), 
+                    getXOffset() + powerUp.x, 
+                    getYOffset() + powerUp.y + powerUp.size + 8);
+                ctx.restore();
+            }
+        }
+
+        function getPowerUpColor(type) {
+            switch(type) {
+                case "rockets": return "orange";
+                case "lasers": return "cyan"; 
+                case "spreadShot": return "yellow";
+                case "rapidFire": return "lime";
+                default: return "white";
+            }
+        }
+
+        function drawPowerUpIcon(type, size) {
+            var color = getPowerUpColor(type);
+            
+            // Outer glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Inner core
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            
+            // Type-specific icon
+            ctx.fillStyle = "white";
+            ctx.font = (size * 0.8) + "pt Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            switch(type) {
+                case "rockets": ctx.fillText("🚀", 0, 0); break;
+                case "lasers": ctx.fillText("⚡", 0, 0); break;
+                case "spreadShot": ctx.fillText("💥", 0, 0); break;
+                case "rapidFire": ctx.fillText("⚡", 0, 0); break;
+            }
+        }
  
         function moveRocks() {
             for (var rockId in Rock.all) {
@@ -922,6 +1185,7 @@
             this.sessionId = sessionId;
             this.color = color;
             this.id = id;
+            this.type = "normal"; // bullet type for power-ups
             Bullet.all[id] = this;
             this.cvs = null;
             this.cvsCtx = null;
@@ -938,23 +1202,163 @@
             draw: function() {
                 if (this.cvs == null) {
                     this.cvs = document.createElement("canvas");
-                    this.cvs.width = this.r * 2;
-                    this.cvs.height = this.r * 2;
+                    this.cvs.width = this.r * 2 + 4; // extra space for effects
+                    this.cvs.height = this.r * 2 + 4;
                     this.cvsCtx = this.cvs.getContext("2d");
                     this.cvsCtx.save();
-                    //cvsCtx.translate(getXOffset() + this.x, getYOffset() + this.y);
-                    this.cvsCtx.fillStyle = this.color;
-                    this.cvsCtx.strokeStyle = "black";
-                    this.cvsCtx.beginPath();
-                    this.cvsCtx.arc(this.r, this.r, this.r, 0, Math.PI * 2, true);
-                    this.cvsCtx.closePath();
-                    this.cvsCtx.fill();
-                    this.cvsCtx.stroke();
+                    
+                    // Draw based on bullet type
+                    if (this.type === "rockets" || this.color === "orange") {
+                        // Rocket: proper rocket shape with flame trail
+                        var centerX = this.r + 2;
+                        var centerY = this.r + 2;
+                        
+                        // Calculate angle for rocket orientation
+                        var angle = Math.atan2(this.vy, this.vx);
+                        
+                        this.cvsCtx.save();
+                        this.cvsCtx.translate(centerX, centerY);
+                        this.cvsCtx.rotate(angle);
+                        
+                        // Draw realistic rocket exhaust flames (behind rocket)
+                        var speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                        var thrustPower = Math.min(speed / 2, 1); // Scale with rocket speed
+                        var flameLength = this.r * (6 + thrustPower * 4); // Twice as long flames
+                        var flameWidth = this.r * (1.2 + thrustPower * 0.5);
+                        
+                        // Pulsing flame effect for realistic engine burn
+                        var flamePulse = 0.8 + 0.3 * Math.sin(Date.now() * 0.02);
+                        flameLength *= flamePulse;
+                        
+                        // Main exhaust plume
+                        var gradient = this.cvsCtx.createLinearGradient(-flameLength, 0, this.r * -0.2, 0);
+                        gradient.addColorStop(0, "rgba(255, 0, 0, 0)");
+                        gradient.addColorStop(0.2, "rgba(255, 50, 0, 0.4)");
+                        gradient.addColorStop(0.5, "rgba(255, 150, 0, 0.8)");
+                        gradient.addColorStop(0.8, "rgba(255, 255, 100, 0.9)");
+                        gradient.addColorStop(1, "rgba(255, 255, 255, 1)");
+                        
+                        this.cvsCtx.fillStyle = gradient;
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.moveTo(-this.r * 0.1, 0);
+                        this.cvsCtx.lineTo(-flameLength, -flameWidth/2);
+                        this.cvsCtx.lineTo(-flameLength * 0.8, 0);
+                        this.cvsCtx.lineTo(-flameLength, flameWidth/2);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        
+                        // Inner core flame (bright white/blue)
+                        var coreLength = flameLength * 0.6;
+                        var coreWidth = flameWidth * 0.4;
+                        var coreGradient = this.cvsCtx.createLinearGradient(-coreLength, 0, this.r * -0.1, 0);
+                        coreGradient.addColorStop(0, "rgba(100, 150, 255, 0.3)");
+                        coreGradient.addColorStop(0.5, "rgba(200, 200, 255, 0.8)");
+                        coreGradient.addColorStop(1, "rgba(255, 255, 255, 1)");
+                        
+                        this.cvsCtx.fillStyle = coreGradient;
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.moveTo(-this.r * 0.05, 0);
+                        this.cvsCtx.lineTo(-coreLength, -coreWidth/2);
+                        this.cvsCtx.lineTo(-coreLength * 0.7, 0);
+                        this.cvsCtx.lineTo(-coreLength, coreWidth/2);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        
+                        // Draw homing indicator (pulsing glow around rocket)
+                        var pulseAlpha = 0.2 + 0.3 * Math.sin(Date.now() * 0.008);
+                        this.cvsCtx.shadowColor = "#00FF00"; // Green glow for homing
+                        this.cvsCtx.shadowBlur = 12;
+                        this.cvsCtx.globalAlpha = pulseAlpha;
+                        this.cvsCtx.strokeStyle = "#00FF00";
+                        this.cvsCtx.lineWidth = 2;
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.ellipse(0, 0, this.r * 1.5, this.r * 1.2, 0, 0, Math.PI * 2);
+                        this.cvsCtx.stroke();
+                        this.cvsCtx.globalAlpha = 1;
+                        this.cvsCtx.shadowBlur = 0;
+                        
+                        // Draw rocket body (slightly larger)
+                        this.cvsCtx.fillStyle = "#C0C0C0"; // Silver body
+                        this.cvsCtx.strokeStyle = "#333";
+                        this.cvsCtx.lineWidth = 1;
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.ellipse(0, 0, this.r * 1.1, this.r * 0.7, 0, 0, Math.PI * 2);
+                        this.cvsCtx.fill();
+                        this.cvsCtx.stroke();
+                        
+                        // Draw rocket nose (pointed tip)
+                        this.cvsCtx.fillStyle = "#FF4500"; // Orange tip
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.moveTo(this.r * 1.1, 0);
+                        this.cvsCtx.lineTo(this.r * 0.3, -this.r * 0.45);
+                        this.cvsCtx.lineTo(this.r * 0.3, this.r * 0.45);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        
+                        // Draw fins
+                        this.cvsCtx.fillStyle = "#8B0000"; // Dark red fins
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.moveTo(-this.r * 0.5, -this.r * 0.6);
+                        this.cvsCtx.lineTo(-this.r * 0.8, -this.r * 0.9);
+                        this.cvsCtx.lineTo(-this.r * 0.3, -this.r * 0.6);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.moveTo(-this.r * 0.5, this.r * 0.6);
+                        this.cvsCtx.lineTo(-this.r * 0.8, this.r * 0.9);
+                        this.cvsCtx.lineTo(-this.r * 0.3, this.r * 0.6);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        
+                        this.cvsCtx.restore();
+                    } else if (this.type === "lasers" || this.color === "cyan") {
+                        // Laser: bright glowing bullet
+                        var gradient = this.cvsCtx.createRadialGradient(this.r + 2, this.r + 2, 0, this.r + 2, this.r + 2, this.r + 1);
+                        gradient.addColorStop(0, "white");
+                        gradient.addColorStop(0.5, "cyan");
+                        gradient.addColorStop(1, "blue");
+                        this.cvsCtx.fillStyle = gradient;
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.arc(this.r + 2, this.r + 2, this.r, 0, Math.PI * 2, true);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                    } else if (this.type === "spreadShot" || this.color === "yellow") {
+                        // Spread shot: jagged bullet
+                        this.cvsCtx.fillStyle = "yellow";
+                        this.cvsCtx.strokeStyle = "orange";
+                        this.cvsCtx.lineWidth = 1;
+                        this.cvsCtx.beginPath();
+                        // Create a star shape
+                        var spikes = 6;
+                        var step = Math.PI / spikes;
+                        var innerRadius = this.r * 0.5;
+                        var outerRadius = this.r;
+                        for (var i = 0; i < spikes * 2; i++) {
+                            var radius = (i % 2 === 0) ? outerRadius : innerRadius;
+                            var x = (this.r + 2) + Math.cos(i * step) * radius;
+                            var y = (this.r + 2) + Math.sin(i * step) * radius;
+                            if (i === 0) this.cvsCtx.moveTo(x, y);
+                            else this.cvsCtx.lineTo(x, y);
+                        }
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        this.cvsCtx.stroke();
+                    } else {
+                        // Normal bullet or rapid fire
+                        this.cvsCtx.fillStyle = this.color;
+                        this.cvsCtx.strokeStyle = "black";
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.arc(this.r + 2, this.r + 2, this.r, 0, Math.PI * 2, true);
+                        this.cvsCtx.closePath();
+                        this.cvsCtx.fill();
+                        this.cvsCtx.stroke();
+                    }
                     this.cvsCtx.restore();
                 }
                 ctx.save();
                 ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
-                ctx.drawImage(this.cvs, -this.r, -this.r);
+                ctx.drawImage(this.cvs, -this.r - 2, -this.r - 2);
                 ctx.restore();
             },
             remove: function() {
@@ -967,6 +1371,7 @@
             var bullet = new Bullet(data["x"], data["y"], data["r"], data["color"], data["sessionId"], data["id"]);
             bullet.vx = data["vx"];
             bullet.vy = data["vy"];
+            bullet.type = data["type"] || "normal";
         };
 
         Bullet.moveBullet = function(data) {
@@ -980,6 +1385,15 @@
                 bullet.py = bullet.y;
                 bullet.x = data["x"];
                 bullet.y = data["y"];
+                
+                // Update velocity for rockets (needed for proper rotation)
+                if (data["vx"] !== undefined) bullet.vx = data["vx"];
+                if (data["vy"] !== undefined) bullet.vy = data["vy"];
+                
+                // Force canvas redraw for rockets (their rotation changes)
+                if (bullet.type === "rockets") {
+                    bullet.cvs = null; // Force redraw with new angle
+                }
             }
         };
 
@@ -1043,6 +1457,23 @@
             remove: function() {
                 delete Rock.all[this.id];
             },
+            // Helper functions for color manipulation
+            lightenColor: function(color, percent) {
+                var num = parseInt(color.replace("#",""), 16),
+                    amt = Math.round(2.55 * percent),
+                    R = (num >> 16) + amt,
+                    G = (num >> 8 & 0x00FF) + amt,
+                    B = (num & 0x0000FF) + amt;
+                return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+            },
+            darkenColor: function(color, percent) {
+                var num = parseInt(color.replace("#",""), 16),
+                    amt = Math.round(2.55 * percent),
+                    R = (num >> 16) - amt,
+                    G = (num >> 8 & 0x00FF) - amt,
+                    B = (num & 0x0000FF) - amt;
+                return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+            },
             draw: function() {
                 if (this.cvs == null) {
                     this.cvs = document.createElement("canvas");
@@ -1050,29 +1481,101 @@
                     this.cvs.height = this.r * 2;
                     this.cvsCtx = this.cvs.getContext("2d");
                     this.cvsCtx.save();
-                    //this.cvsCtx.rotate(this.drawangle * Math.PI / 180);
-                    //this.drawangle = (this.drawangle + (1 * this.spinDirection)) % 360;
-                    this.cvsCtx.fillStyle = this.color;
-                    this.cvsCtx.strokeStyle = "black";
-                    this.cvsCtx.lineWidth = 1;
+                    
+                    // Create realistic asteroid appearance
+                    var centerX = this.r;
+                    var centerY = this.r;
+                    
+                    // Base asteroid colors (darker, more rock-like)
+                    var baseColors = ["#4a4a4a", "#5c5c5c", "#3d3d3d", "#6b6b6b", "#2f2f2f"];
+                    var isShieldRegen = this.color == "lightblue";
+                    var baseColor = isShieldRegen ? "#4a5a6a" : (baseColors[Math.floor(Math.abs(this.x + this.y) % baseColors.length)]); // Slightly blue tint for shield rocks
+                    
+                    // Create radial gradient for depth
+                    var gradient = this.cvsCtx.createRadialGradient(centerX * 0.7, centerY * 0.7, 0, centerX, centerY, this.r);
+                    gradient.addColorStop(0, this.lightenColor(baseColor, 30));
+                    gradient.addColorStop(0.6, baseColor);
+                    gradient.addColorStop(1, this.darkenColor(baseColor, 40));
+                    
+                    this.cvsCtx.fillStyle = gradient;
+                    this.cvsCtx.strokeStyle = this.darkenColor(baseColor, 20);
+                    this.cvsCtx.lineWidth = 2;
+                    
+                    // Draw jagged, irregular asteroid shape
                     this.cvsCtx.beginPath();
-                    var isFirst = 1;
+                    var isFirst = true;
                     for (var idx in this.coords) {
                         var coord = this.coords[idx];
-                        if (isFirst == 1) {
-                            this.cvsCtx.moveTo(coord[0] + this.r, coord[1] + this.r);
-                            isFirst = 0;
+                        // Add some random jaggedness to make it more asteroid-like
+                        var jitter = this.r * 0.1;
+                        var jitterX = (Math.sin(coord[0] * 0.1 + this.x) * jitter);
+                        var jitterY = (Math.cos(coord[1] * 0.1 + this.y) * jitter);
+                        
+                        var x = coord[0] + this.r + jitterX;
+                        var y = coord[1] + this.r + jitterY;
+                        
+                        if (isFirst) {
+                            this.cvsCtx.moveTo(x, y);
+                            isFirst = false;
                         } else {
-                            this.cvsCtx.lineTo(coord[0] + this.r, coord[1] + this.r);
+                            this.cvsCtx.lineTo(x, y);
                         }
                     }
                     this.cvsCtx.closePath();
                     this.cvsCtx.fill();
                     this.cvsCtx.stroke();
-                    if (this.color == "lightblue") {
-                        this.cvsCtx.font = "18pt Courier New";
-                        this.cvsCtx.fillStyle = "black";
-                        this.cvsCtx.fillText("\u26e8", this.r, this.r);
+                    
+                    // Add some crater-like details
+                    this.cvsCtx.fillStyle = this.darkenColor(baseColor, 30);
+                    for (var i = 0; i < 3; i++) {
+                        var craterX = centerX + (Math.sin(i * 2.1 + this.x * 0.01) * this.r * 0.3);
+                        var craterY = centerY + (Math.cos(i * 1.7 + this.y * 0.01) * this.r * 0.3);
+                        var craterSize = this.r * (0.1 + Math.abs(Math.sin(i + this.x * 0.01)) * 0.1);
+                        
+                        this.cvsCtx.beginPath();
+                        this.cvsCtx.arc(craterX, craterY, craterSize, 0, 2 * Math.PI);
+                        this.cvsCtx.fill();
+                    }
+                    
+                    // Special effects for shield regeneration asteroids
+                    if (isShieldRegen) {
+                        // Add glowing blue crystals embedded in the rock surface
+                        this.cvsCtx.save();
+                        
+                        // Draw energy crystals at various points
+                        var crystalPositions = [
+                            {x: centerX * 0.6, y: centerY * 0.7, size: 0.15},
+                            {x: centerX * 1.3, y: centerY * 0.8, size: 0.12},
+                            {x: centerX * 0.8, y: centerY * 1.4, size: 0.18},
+                            {x: centerX * 1.2, y: centerY * 1.2, size: 0.10}
+                        ];
+                        
+                        for (var j = 0; j < crystalPositions.length; j++) {
+                            var crystal = crystalPositions[j];
+                            var crystalSize = this.r * crystal.size;
+                            
+                            // Create glowing crystal gradient
+                            var crystalGradient = this.cvsCtx.createRadialGradient(
+                                crystal.x, crystal.y, 0,
+                                crystal.x, crystal.y, crystalSize
+                            );
+                            crystalGradient.addColorStop(0, "#88ddff");
+                            crystalGradient.addColorStop(0.7, "#2299cc");
+                            crystalGradient.addColorStop(1, "#004466");
+                            
+                            this.cvsCtx.fillStyle = crystalGradient;
+                            this.cvsCtx.beginPath();
+                            this.cvsCtx.arc(crystal.x, crystal.y, crystalSize, 0, 2 * Math.PI);
+                            this.cvsCtx.fill();
+                            
+                            // Add bright crystal core
+                            this.cvsCtx.fillStyle = "#aaeeff";
+                            this.cvsCtx.beginPath();
+                            this.cvsCtx.arc(crystal.x, crystal.y, crystalSize * 0.4, 0, 2 * Math.PI);
+                            this.cvsCtx.fill();
+                        }
+                        
+                        this.cvsCtx.restore();
                     }
                     this.cvsCtx.restore();
                 }
@@ -1080,6 +1583,47 @@
                 ctx.translate(getXOffset() + this.x, getYOffset() + this.y);
                 ctx.rotate(this.drawangle * Math.PI / 180);
                 this.drawangle = (this.drawangle + (1 * this.spinDirection)) % 360;
+                
+                // Add dynamic effects for shield regeneration asteroids
+                if (this.color == "lightblue") {
+                    var time = Date.now() * 0.003;
+                    
+                    // Pulsing energy aura around the asteroid
+                    var pulseIntensity = 0.6 + 0.4 * Math.sin(time);
+                    var auraRadius = this.r * (1.3 + 0.2 * Math.sin(time * 1.5));
+                    
+                    // Outer energy glow
+                    var auraGradient = ctx.createRadialGradient(0, 0, this.r * 0.8, 0, 0, auraRadius);
+                    auraGradient.addColorStop(0, "rgba(102, 204, 255, 0)");
+                    auraGradient.addColorStop(0.7, "rgba(102, 204, 255, " + (0.1 * pulseIntensity) + ")");
+                    auraGradient.addColorStop(1, "rgba(50, 150, 255, " + (0.3 * pulseIntensity) + ")");
+                    
+                    ctx.fillStyle = auraGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, auraRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Energy particles floating around the asteroid
+                    for (var p = 0; p < 8; p++) {
+                        var particleAngle = (time + p * 0.8) % (2 * Math.PI);
+                        var particleDistance = this.r * (1.2 + 0.3 * Math.sin(time * 2 + p));
+                        var particleX = Math.cos(particleAngle) * particleDistance;
+                        var particleY = Math.sin(particleAngle) * particleDistance;
+                        var particleAlpha = 0.4 + 0.4 * Math.sin(time * 3 + p * 1.2);
+                        
+                        ctx.fillStyle = "rgba(150, 220, 255, " + particleAlpha + ")";
+                        ctx.beginPath();
+                        ctx.arc(particleX, particleY, 2, 0, 2 * Math.PI);
+                        ctx.fill();
+                        
+                        // Add small glow around each particle
+                        ctx.fillStyle = "rgba(200, 240, 255, " + (particleAlpha * 0.3) + ")";
+                        ctx.beginPath();
+                        ctx.arc(particleX, particleY, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                }
+                
                 ctx.drawImage(this.cvs, -this.r, -this.r);
                 ctx.restore();
             }
@@ -1137,10 +1681,21 @@
             starsCtx.restore();
         }
 
+        var lastSyncCheck = 0;
+        
         function drawWorld() {
               requestAnimationFrame(drawWorld);
               removeStuff(); 
               drawStars();
+              
+              // Periodic sync check (every 5 seconds)
+              var now = Date.now();
+              if (now - lastSyncCheck > 5000 && socket && sessionId) {
+                  lastSyncCheck = now;
+                  // Request server to confirm our power-up state
+                  socket.emit("syncPowerUp", { sessionId: sessionId });
+              }
+              
               ctx.save();
               ctx.lineWidth = 2;
               ctx.strokeStyle = "#6495ED";
@@ -1149,9 +1704,11 @@
               drawTurrets();
               Bullet.draw_all();
               Rock.draw_all();
+              drawWorldPowerUps(); // Draw power-ups floating in space
               drawScores();
               drawHelp();
               drawLocation();
+              drawPlayerPowerUps(); // Draw player's current power-ups in UI
         }
         drawWorld();
     </script>
